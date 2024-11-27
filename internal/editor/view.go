@@ -94,8 +94,8 @@ func (v *View) RenderEntry(entry buffer.Entry, row int) string {
 }
 
 // RenderStatusLine renders the status line at the bottom
-func (v *View) RenderStatusLine(mode, path string, cursorRow int) string {
-	return ui.RenderStatusLine(mode, path, v.Width, cursorRow, 0)
+func (v *View) RenderStatusLine(mode, path string, cursorRow, cursorCol int) string {
+	return ui.RenderStatusLine(mode, path, v.Width, cursorRow, cursorCol)
 }
 
 func min(a, b int) int {

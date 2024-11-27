@@ -90,7 +90,12 @@ func (e Editor) View() string {
 
 	// Render status line
 	mode := e.state.GetMode()
-	b.WriteString(e.view.RenderStatusLine(mode.String(), e.navigator.Buffer.CurrentDir, e.navigator.Cursor.Row))
+	b.WriteString(e.view.RenderStatusLine(
+		mode.String(),
+		e.navigator.Buffer.CurrentDir,
+		e.navigator.Cursor.Row,
+		e.navigator.Cursor.Col,
+	))
 
 	return b.String()
 }
