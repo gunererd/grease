@@ -6,7 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gunererd/grease/internal/model"
+	"github.com/gunererd/grease/internal/editor"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	defer f.Close()
 
 	p := tea.NewProgram(
-		model.New(),
+		editor.New(),
 		tea.WithAltScreen(),
 	)
 

@@ -1,11 +1,13 @@
-package model
+package cursor
 
+// Cursor represents a 2D cursor position
 type Cursor struct {
 	Row int
 	Col int
 }
 
-func NewCursor() Cursor {
+// New creates a new Cursor instance
+func New() Cursor {
 	return Cursor{
 		Row: 0,
 		Col: 0,
@@ -44,7 +46,13 @@ func (c *Cursor) MoveDown(nextLineLength int) {
 	}
 }
 
+// SetPosition sets the cursor position
 func (c *Cursor) SetPosition(row, col int) {
 	c.Row = row
 	c.Col = col
+}
+
+// GetPosition returns the current cursor position
+func (c *Cursor) GetPosition() (row, col int) {
+	return c.Row, c.Col
 }

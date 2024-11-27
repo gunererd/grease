@@ -1,4 +1,4 @@
-package model
+package editor
 
 type Mode int
 
