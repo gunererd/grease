@@ -113,3 +113,12 @@ func (b *Buffer) GetParentDir() (string, error) {
 
 	return parentDir, nil
 }
+
+// GetLineLength returns the length of the line at the given index
+// If the index is out of bounds, returns 0
+func (b *Buffer) GetLineLength(idx int) int {
+	if idx < 0 || idx >= len(b.Lines) {
+		return 0
+	}
+	return len(b.Lines[idx])
+}

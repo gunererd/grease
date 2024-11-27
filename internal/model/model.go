@@ -121,20 +121,20 @@ func (m Model) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.Mode = VisualMode
 
 	case "h":
-		m.Cursor.Move(0, -1)
+		m.Cursor.MoveLeft()
 
 	case "l":
-		m.Cursor.Move(0, 1)
+		m.Cursor.MoveRight(m.Buffer.GetLineLength(m.Cursor.Row))
 
 	case "j":
 		if m.Cursor.Row < m.Buffer.NumLines()-1 {
-			m.Cursor.Move(1, 0)
+			m.Cursor.MoveDown(m.Buffer.GetLineLength(m.Cursor.Row + 1))
 			m.ensureCursorVisible()
 		}
 
 	case "k":
 		if m.Cursor.Row > 0 {
-			m.Cursor.Move(-1, 0)
+			m.Cursor.MoveUp(m.Buffer.GetLineLength(m.Cursor.Row - 1))
 			m.ensureCursorVisible()
 		}
 
@@ -167,12 +167,12 @@ func (m Model) handleVisualMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "j":
 		if m.Cursor.Row < m.Buffer.NumLines()-1 {
-			m.Cursor.Move(1, 0)
+			m.Cursor.MoveLeft()
 		}
 
 	case "k":
 		if m.Cursor.Row > 0 {
-			m.Cursor.Move(-1, 0)
+			m.Cursor.MoveRight(m.Buffer.GetLineLength(m.Cursor.Row))
 		}
 	}
 
@@ -211,17 +211,9 @@ func (m Model) View() string {
 		s.WriteString("\n")
 	}
 
-	// Show scroll indicators if needed
-	if m.ScrollOffset > 0 {
-		s.WriteString("↑ More above\n")
-	}
-	if endIdx < m.Buffer.NumLines() {
-		s.WriteString("↓ More below\n")
-	}
-
 	// Fill remaining space with empty lines to push statusline to bottom
 	currentLines := strings.Count(s.String(), "\n")
-	for i := 0; i < contentHeight-currentLines; i++ {
+	for i := 0; i < contentHeight-currentLines-1; i++ {
 		s.WriteString("\n")
 	}
 
