@@ -73,6 +73,14 @@ func (h *InsertModeHandler) Handle(msg tea.KeyMsg, e *Editor) (tea.Model, tea.Cm
 			e.navigator.Buffer.DeleteCharAtCursor(row, col)
 			e.navigator.Cursor.MoveLeft()
 		}
+	case "up":
+		e.navigator.MoveCursorUp()
+	case "down":
+		e.navigator.MoveCursorDown()
+	case "left":
+		e.navigator.MoveCursorLeft()
+	case "right":
+		e.navigator.MoveCursorRight()
 	default:
 		if len(msg.String()) == 1 {
 			row := e.navigator.Cursor.Row

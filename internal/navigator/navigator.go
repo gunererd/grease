@@ -48,6 +48,16 @@ func (n *Navigator) MoveCursorRight() {
 	n.Cursor.MoveRight(lineLength)
 }
 
+func (n *Navigator) MoveCursorUp() {
+	prevLineLength := n.Buffer.GetLineLength(n.Cursor.Row - 1)
+	n.Cursor.MoveUp(prevLineLength)
+}
+
+func (n *Navigator) MoveCursorDown() {
+	nextLineLength := n.Buffer.GetLineLength(n.Cursor.Row + 1)
+	n.Cursor.MoveDown(nextLineLength)
+}
+
 // SetCursor sets the cursor to a specific row
 func (n *Navigator) SetCursor(row int) {
 	if row >= 0 && row < n.Buffer.NumEntries() {
