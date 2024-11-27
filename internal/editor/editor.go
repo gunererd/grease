@@ -23,10 +23,11 @@ type Editor struct {
 // New creates a new Editor instance with default settings
 func New() Editor {
 	nav := navigator.New()
-	view := NewView(nav)
+	state := NewState()
+	view := NewView(nav, state)
 	return Editor{
 		view:      view,
-		state:     NewState(),
+		state:     state,
 		navigator: nav,
 		handlers: map[Mode]ModeHandler{
 			NormalMode: NewNormalModeHandler(),
@@ -78,8 +79,7 @@ func (e Editor) View() string {
 		if !ok {
 			continue
 		}
-		selected := e.state.IsSelected(i)
-		b.WriteString(e.view.RenderEntry(entry, i, selected))
+		b.WriteString(e.view.RenderEntry(entry, i))
 		b.WriteString("\n")
 	}
 

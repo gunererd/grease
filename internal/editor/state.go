@@ -23,15 +23,15 @@ func (s *State) GetMode() Mode {
 	return s.Mode
 }
 
-// StartSelection starts a new selection from the given row
-func (s *State) StartSelection(row int) {
-	s.Selection = NewSelection(row)
+// StartSelection starts a new selection from the given position
+func (s *State) StartSelection(row, col int) {
+	s.Selection = NewSelection(row, col)
 }
 
 // UpdateSelection updates the selection end point
-func (s *State) UpdateSelection(row int) {
+func (s *State) UpdateSelection(row, col int) {
 	if s.Selection != nil {
-		s.Selection.UpdateEnd(row)
+		s.Selection.UpdateEnd(row, col)
 	}
 }
 
@@ -40,10 +40,10 @@ func (s *State) ClearSelection() {
 	s.Selection = nil
 }
 
-// IsSelected checks if a given row is currently selected
-func (s *State) IsSelected(row int) bool {
+// IsSelected checks if a given position is currently selected
+func (s *State) IsSelected(row, col int) bool {
 	if s.Selection == nil {
 		return false
 	}
-	return s.Selection.Contains(row)
+	return s.Selection.Contains(row, col)
 }

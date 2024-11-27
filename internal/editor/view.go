@@ -1,6 +1,8 @@
 package editor
 
 import (
+	"strings"
+
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/navigator"
 	"github.com/gunererd/grease/internal/ui"
@@ -13,13 +15,15 @@ type View struct {
 	ScrollOffset int
 	ViewHeight   int
 	navigator    *navigator.Navigator
+	state        *State // Reference to editor state
 }
 
 // NewView creates a new View instance
-func NewView(n *navigator.Navigator) *View {
+func NewView(n *navigator.Navigator, s *State) *View {
 	return &View{
 		navigator:  n,
 		ViewHeight: 10, // Default height, will be updated when window size is received
+		state:      s,
 	}
 }
 
@@ -48,54 +52,45 @@ func (v *View) GetVisibleRange(totalEntries int) (start, end int) {
 }
 
 // RenderEntry renders a single entry with appropriate styling
-func (v *View) RenderEntry(entry buffer.Entry, idx int, isSelected bool) string {
-	line := v.navigator.Buffer.GetLine(idx)
+func (v *View) RenderEntry(entry buffer.Entry, row int) string {
+	line := v.navigator.Buffer.GetLine(row)
 	if entry.IsDir {
 		line += "/"
 	}
 
-	// First apply selection style if selected
-	if isSelected {
-		line = ui.SelectedStyle.Render(line)
+	// Convert line to runes for proper character handling
+	runes := []rune(line)
+	var result strings.Builder
+
+	// Handle empty line case
+	if len(runes) == 0 {
 		return line
 	}
 
-	// Then handle cursor if this is the cursor row
-	if idx == v.navigator.Cursor.Row && len(line) > 0 {
-		runes := []rune(line)
-		cursorCol := v.navigator.Cursor.Col
+	// Get cursor position for this line
+	cursorCol := -1
+	if row == v.navigator.Cursor.Row {
+		cursorCol = v.navigator.Cursor.Col
 		if cursorCol >= len(runes) {
 			cursorCol = len(runes) - 1
 		}
-		if cursorCol < 0 {
-			cursorCol = 0
-		}
-
-		// Split the line into three parts: before cursor, cursor char, and after cursor
-		before := string(runes[:cursorCol])
-		cursor := string(runes[cursorCol])
-		after := ""
-		if cursorCol < len(runes)-1 {
-			after = string(runes[cursorCol+1:])
-		}
-
-		// Apply styles
-		if v.navigator.Buffer.IsLineModified(idx) {
-			line = ui.ModifiedStyle.Render(before) +
-				ui.CursorStyle.Render(cursor) +
-				ui.ModifiedStyle.Render(after)
-		} else {
-			line = before + ui.CursorStyle.Render(cursor) + after
-		}
-		return line
 	}
 
-	// Finally, show modified style if line is modified
-	if v.navigator.Buffer.IsLineModified(idx) {
-		line = ui.ModifiedStyle.Render(line)
+	// Render each character with appropriate style
+	for col, r := range runes {
+		char := string(r)
+		switch {
+		case col == cursorCol:
+			char = ui.CursorStyle.Render(char)
+		case v.navigator.Buffer.IsLineModified(row):
+			char = ui.ModifiedStyle.Render(char)
+		case v.state.IsSelected(row, col):
+			char = ui.SelectedStyle.Render(char)
+		}
+		result.WriteString(char)
 	}
 
-	return line
+	return result.String()
 }
 
 // RenderStatusLine renders the status line at the bottom

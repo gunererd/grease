@@ -48,7 +48,7 @@ func (h *NormalModeHandler) Handle(msg tea.KeyMsg, e *Editor) (tea.Model, tea.Cm
 		e.state.SetMode(InsertMode)
 	case "v":
 		e.state.SetMode(VisualMode)
-		e.state.StartSelection(e.navigator.Cursor.Row)
+		e.state.StartSelection(e.navigator.Cursor.Row, e.navigator.Cursor.Col)
 	}
 
 	return e, nil
@@ -107,14 +107,20 @@ func (h *VisualModeHandler) Handle(msg tea.KeyMsg, e *Editor) (tea.Model, tea.Cm
 		return e, nil
 	case "j":
 		if e.navigator.MoveCursor(1) {
-			e.state.UpdateSelection(e.navigator.Cursor.Row)
+			e.state.UpdateSelection(e.navigator.Cursor.Row, e.navigator.Cursor.Col)
 			e.view.EnsureVisible(e.navigator.Cursor.Row, e.navigator.NumEntries())
 		}
 	case "k":
 		if e.navigator.MoveCursor(-1) {
-			e.state.UpdateSelection(e.navigator.Cursor.Row)
+			e.state.UpdateSelection(e.navigator.Cursor.Row, e.navigator.Cursor.Col)
 			e.view.EnsureVisible(e.navigator.Cursor.Row, e.navigator.NumEntries())
 		}
+	case "h":
+		e.navigator.MoveCursorLeft()
+		e.state.UpdateSelection(e.navigator.Cursor.Row, e.navigator.Cursor.Col)
+	case "l":
+		e.navigator.MoveCursorRight()
+		e.state.UpdateSelection(e.navigator.Cursor.Row, e.navigator.Cursor.Col)
 	}
 	return e, nil
 }

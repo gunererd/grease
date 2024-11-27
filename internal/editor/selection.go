@@ -1,61 +1,91 @@
 package editor
 
-// Selection represents a range of selected entries in visual mode
+// Selection represents a range of selected characters in visual mode
 type Selection struct {
-	Start int // Starting entry index
-	End   int // Ending entry index (inclusive)
+	StartRow, StartCol int // Starting position (row, column)
+	EndRow, EndCol     int // Ending position (row, column)
 }
 
 // NewSelection creates a new selection starting at the given position
-func NewSelection(pos int) *Selection {
+func NewSelection(row, col int) *Selection {
 	return &Selection{
-		Start: pos,
-		End:   pos,
+		StartRow: row,
+		StartCol: col,
+		EndRow:   row,
+		EndCol:   col,
 	}
 }
 
-// Contains checks if the given index is within the selection range
-func (s *Selection) Contains(idx int) bool {
+// Contains checks if the given position is within the selection range
+func (s *Selection) Contains(row, col int) bool {
 	if s == nil {
 		return false
 	}
-	if s.Start <= s.End {
-		return idx >= s.Start && idx <= s.End
+
+	// Get ordered positions
+	startRow, startCol, endRow, endCol := s.GetOrderedRange()
+
+	// If single line selection
+	if startRow == endRow {
+		return row == startRow && col >= startCol && col <= endCol
 	}
-	return idx >= s.End && idx <= s.Start
+
+	// Multi-line selection
+	switch {
+	case row == startRow:
+		return col >= startCol
+	case row == endRow:
+		return col <= endCol
+	case row > startRow && row < endRow:
+		return true
+	default:
+		return false
+	}
 }
 
 // UpdateEnd updates the end position of the selection
-func (s *Selection) UpdateEnd(pos int) {
+func (s *Selection) UpdateEnd(row, col int) {
 	if s != nil {
-		s.End = pos
+		s.EndRow = row
+		s.EndCol = col
 	}
 }
 
 // Clear clears the selection
 func (s *Selection) Clear() {
 	if s != nil {
-		s.Start = 0
-		s.End = 0
+		s.StartRow = 0
+		s.StartCol = 0
+		s.EndRow = 0
+		s.EndCol = 0
 	}
 }
 
-// GetRange returns the start and end indices of the selection in ascending order
-func (s *Selection) GetRange() (start, end int) {
+// GetOrderedRange returns the selection range in order (top-to-bottom, left-to-right)
+func (s *Selection) GetOrderedRange() (startRow, startCol, endRow, endCol int) {
 	if s == nil {
-		return 0, 0
+		return 0, 0, 0, 0
 	}
-	if s.Start <= s.End {
-		return s.Start, s.End
+
+	if s.StartRow < s.EndRow || (s.StartRow == s.EndRow && s.StartCol <= s.EndCol) {
+		return s.StartRow, s.StartCol, s.EndRow, s.EndCol
 	}
-	return s.End, s.Start
+	return s.EndRow, s.EndCol, s.StartRow, s.StartCol
 }
 
-// NumSelected returns the number of selected entries
+// NumSelected returns the number of selected characters
 func (s *Selection) NumSelected() int {
 	if s == nil {
 		return 0
 	}
-	start, end := s.GetRange()
-	return end - start + 1
+	startRow, startCol, endRow, endCol := s.GetOrderedRange()
+	if startRow == endRow {
+		return endCol - startCol + 1
+	}
+	numSelected := endCol - startCol + 1
+	for row := startRow + 1; row < endRow; row++ {
+		numSelected += 100 // assuming 100 characters per line
+	}
+	numSelected += endCol + 1
+	return numSelected
 }
