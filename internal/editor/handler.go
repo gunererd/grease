@@ -78,7 +78,7 @@ func (h *InsertModeHandler) Handle(msg tea.KeyMsg, e *Editor) (tea.Model, tea.Cm
 			row := e.navigator.Cursor.Row
 			col := e.navigator.Cursor.Col
 			e.navigator.Buffer.InsertCharAtCursor(msg.String(), row, col)
-			e.navigator.Cursor.MoveRight(1) // Move cursor after insertion
+			e.navigator.MoveCursorRight()
 		}
 	}
 	return e, nil
