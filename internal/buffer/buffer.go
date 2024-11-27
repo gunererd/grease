@@ -16,13 +16,13 @@ type Entry struct {
 }
 
 type Buffer struct {
-	Lines         []string
-	Entries       []Entry
-	LineToEntry   map[int]int
-	CurrentDir    string
-	input         string
-	ModifiedLines map[int]bool
-	isDirty       bool
+	Lines       []string
+	Entries     []Entry
+	LineToEntry map[int]int
+	CurrentDir  string
+	input       string
+	// TODO: Reset OriginalLines after a successful save
+	OriginalLines map[int]string
 }
 
 func NewBuffer() *Buffer {
@@ -32,8 +32,7 @@ func NewBuffer() *Buffer {
 		LineToEntry:   make(map[int]int),
 		CurrentDir:    ".",
 		input:         "",
-		ModifiedLines: make(map[int]bool),
-		isDirty:       false,
+		OriginalLines: make(map[int]string),
 	}
 }
 
@@ -48,8 +47,7 @@ func (b *Buffer) ReadDirectory(path string) error {
 	b.Entries = make([]Entry, 0)
 	b.LineToEntry = make(map[int]int)
 	b.CurrentDir = absPath
-	b.ModifiedLines = make(map[int]bool)
-	b.isDirty = false
+	b.OriginalLines = make(map[int]string)
 
 	entries, err := os.ReadDir(absPath)
 	if err != nil {
@@ -143,19 +141,25 @@ func (b *Buffer) UpdateLine(idx int, content string) {
 	}
 }
 
-// IsLineModified returns true if the line has been modified
+// IsLineModified returns true if the line has been modified from its original value
 func (b *Buffer) IsLineModified(idx int) bool {
-	return b.ModifiedLines[idx]
+	if originalValue, exists := b.OriginalLines[idx]; exists {
+		return b.Lines[idx] != originalValue
+	}
+	return false
 }
 
 // InsertCharAtCursor inserts a character at the specified position
 func (b *Buffer) InsertCharAtCursor(c string, row, col int) {
 	if row >= 0 && row < len(b.Lines) {
+		// Store original value if this is the first modification
+		if _, exists := b.OriginalLines[row]; !exists {
+			b.OriginalLines[row] = b.Lines[row]
+		}
+
 		line := b.Lines[row]
 		if col >= 0 && col <= len(line) {
 			b.Lines[row] = line[:col] + c + line[col:]
-			b.ModifiedLines[row] = true
-			b.isDirty = true
 		}
 	}
 }
@@ -163,11 +167,14 @@ func (b *Buffer) InsertCharAtCursor(c string, row, col int) {
 // DeleteCharAtCursor deletes the character before the cursor position
 func (b *Buffer) DeleteCharAtCursor(row, col int) {
 	if row >= 0 && row < len(b.Lines) {
+		// Store original value if this is the first modification
+		if _, exists := b.OriginalLines[row]; !exists {
+			b.OriginalLines[row] = b.Lines[row]
+		}
+
 		line := b.Lines[row]
 		if col > 0 && col <= len(line) {
 			b.Lines[row] = line[:col-1] + line[col:]
-			b.ModifiedLines[row] = true
-			b.isDirty = true
 		}
 	}
 }
