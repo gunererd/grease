@@ -122,3 +122,10 @@ func (b *Buffer) GetLineLength(idx int) int {
 	}
 	return len(b.Lines[idx])
 }
+
+// UpdateLine updates the content of a line at the given index
+func (b *Buffer) UpdateLine(idx int, content string) {
+	if idx >= 0 && idx < len(b.Lines) {
+		b.Lines[idx] = content
+	}
+}

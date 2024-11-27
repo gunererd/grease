@@ -29,6 +29,7 @@ type Model struct {
 	ScrollOffset int
 	ViewHeight   int // Available height for content
 
+	History *History
 }
 
 func New() Model {
@@ -38,6 +39,7 @@ func New() Model {
 		Cursor:       NewCursor(),
 		ViewHeight:   10, // Default height, will be updated when window size is received
 		ScrollOffset: 0,
+		History:      NewHistory(100),
 	}
 }
 
@@ -147,6 +149,30 @@ func (m Model) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if entry, ok := m.Buffer.GetEntry(m.Cursor.Row); ok && entry.IsDir {
 			return m, m.readDirectory(entry.Path)
 		}
+
+	case "u": // undo
+		if change, ok := m.History.Undo(); ok {
+			// Get the line that was changed
+			if change.LineIndex >= 0 && change.LineIndex < m.Buffer.NumLines() {
+				// Restore the old text
+				m.Buffer.UpdateLine(change.LineIndex, change.OldText)
+				// Move cursor to the change position
+				m.Cursor.SetPosition(change.LineIndex, change.Position)
+			}
+		}
+		return m, nil
+
+	case "ctrl+r": // redo
+		if change, ok := m.History.Redo(); ok {
+			// Get the line that was changed
+			if change.LineIndex >= 0 && change.LineIndex < m.Buffer.NumLines() {
+				// Apply the new text
+				m.Buffer.UpdateLine(change.LineIndex, change.NewText)
+				// Move cursor to the change position
+				m.Cursor.SetPosition(change.LineIndex, change.Position)
+			}
+		}
+		return m, nil
 	}
 
 	return m, nil
