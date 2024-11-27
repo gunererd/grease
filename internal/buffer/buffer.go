@@ -71,14 +71,11 @@ func (b *Buffer) ReadDirectory(path string) error {
 	})
 
 	for i, entry := range b.Entries {
-		prefix := "  "
+		suffix := ""
 		if entry.IsDir {
-			prefix = "📁 "
-		} else {
-			prefix = "📄 "
+			suffix = "/"
 		}
-
-		b.Lines = append(b.Lines, prefix+entry.Name)
+		b.Lines = append(b.Lines, entry.Name+suffix)
 		b.LineToEntry[i] = i
 	}
 
