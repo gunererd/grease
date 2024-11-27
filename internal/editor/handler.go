@@ -66,6 +66,13 @@ func (h *InsertModeHandler) Handle(msg tea.KeyMsg, e *Editor) (tea.Model, tea.Cm
 	case "esc":
 		e.state.SetMode(NormalMode)
 		return e, nil
+	case "backspace":
+		row := e.navigator.Cursor.Row
+		col := e.navigator.Cursor.Col
+		if col > 0 {
+			e.navigator.Buffer.DeleteCharAtCursor(row, col)
+			e.navigator.Cursor.MoveLeft()
+		}
 	default:
 		if len(msg.String()) == 1 {
 			row := e.navigator.Cursor.Row

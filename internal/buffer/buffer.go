@@ -160,6 +160,18 @@ func (b *Buffer) InsertCharAtCursor(c string, row, col int) {
 	}
 }
 
+// DeleteCharAtCursor deletes the character before the cursor position
+func (b *Buffer) DeleteCharAtCursor(row, col int) {
+	if row >= 0 && row < len(b.Lines) {
+		line := b.Lines[row]
+		if col > 0 && col <= len(line) {
+			b.Lines[row] = line[:col-1] + line[col:]
+			b.ModifiedLines[row] = true
+			b.isDirty = true
+		}
+	}
+}
+
 // Input handling methods
 func (b *Buffer) GetInput() string {
 	return b.input
