@@ -44,10 +44,8 @@ func (n *Navigator) MoveCursorLeft() {
 
 // MoveCursorRight moves cursor right within current entry bounds
 func (n *Navigator) MoveCursorRight() {
-	if entry, ok := n.Buffer.GetEntry(n.Cursor.Row); ok {
-		lineLength := len(entry.Name)
-		n.Cursor.MoveRight(lineLength)
-	}
+	lineLength := n.Buffer.GetLineLength(n.Cursor.Row)
+	n.Cursor.MoveRight(lineLength)
 }
 
 // SetCursor sets the cursor to a specific row
