@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -36,10 +37,13 @@ var (
 	pathStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#ebdbb2")).
 			MarginLeft(1)
+
+	cursorStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ebdbb2"))
 )
 
 // RenderStatusLine creates a styled status line
-func RenderStatusLine(mode, path string, width int) string {
+func RenderStatusLine(mode, path string, width int, row, col int) string {
 	// Adjust status line width to terminal width
 	statusLineStyle = statusLineStyle.Width(width)
 
@@ -60,10 +64,26 @@ func RenderStatusLine(mode, path string, width int) string {
 		pathDisplay = strings.Replace(pathDisplay, usr.HomeDir, "~", 1)
 	}
 
-	content := lipgloss.JoinHorizontal(
+	leftContent := lipgloss.JoinHorizontal(
 		lipgloss.Left,
 		modeIndicator,
 		pathStyle.Render(pathDisplay),
+	)
+
+	cursorPos := fmt.Sprintf("%d,%d  ", row+1, col+1)
+	rightContent := cursorStyle.Render(cursorPos)
+
+	// Calculate padding needed between left and right content
+	padding := width - lipgloss.Width(leftContent) - lipgloss.Width(rightContent)
+	if padding < 1 {
+		padding = 1
+	}
+
+	content := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		leftContent,
+		strings.Repeat(" ", padding),
+		rightContent,
 	)
 
 	return statusLineStyle.Render(content)

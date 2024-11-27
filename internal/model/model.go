@@ -193,7 +193,22 @@ func (m Model) View() string {
 	for i := m.ScrollOffset; i < endIdx && i-m.ScrollOffset < contentHeight; i++ {
 		line := m.Buffer.GetLine(i)
 
-		s.WriteString(line + "\n")
+		// Handle cursor rendering
+		if i == m.Cursor.Row {
+			if m.Cursor.Col >= len(line) {
+				line = line + " " // Add space for cursor at end
+			}
+			s.WriteString(line[:m.Cursor.Col])
+			if m.Cursor.Col < len(line) {
+				s.WriteString(ui.CursorStyle.Render(string(line[m.Cursor.Col])))
+				s.WriteString(line[m.Cursor.Col+1:])
+			} else {
+				s.WriteString(ui.CursorStyle.Render(" "))
+			}
+		} else {
+			s.WriteString(line)
+		}
+		s.WriteString("\n")
 	}
 
 	// Show scroll indicators if needed
@@ -215,6 +230,8 @@ func (m Model) View() string {
 		m.Mode.String(),
 		m.Buffer.GetCurrentDir(),
 		m.Width,
+		m.Cursor.Row,
+		m.Cursor.Col,
 	))
 
 	return s.String()
