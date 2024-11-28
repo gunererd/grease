@@ -1,7 +1,6 @@
 package viewport
 
 import (
-	"fmt"
 	"math"
 	"strings"
 
@@ -11,21 +10,23 @@ import (
 
 // Viewport represents a view into a portion of the buffer
 type Viewport struct {
-	width     int
-	height    int
-	offset    buffer.Position // Top-left position of viewport in buffer
-	scrollOff int             // Number of lines to keep visible above/below cursor
-	cursor    buffer.Position // Current cursor position
+	width      int
+	height     int
+	offset     buffer.Position // Top-left position of viewport in buffer
+	scrollOff  int             // Number of lines to keep visible above/below cursor
+	cursor     buffer.Position // Current cursor position
+	showCursor bool            // Controls cursor blinking state
 }
 
 // New creates a new viewport with the given dimensions
 func New(width, height int) *Viewport {
 	return &Viewport{
-		width:     width,
-		height:    height,
-		offset:    buffer.Position{Line: 0, Column: 0},
-		scrollOff: 5, // Default scroll offset
-		cursor:    buffer.Position{Line: 0, Column: 0},
+		width:      width,
+		height:     height,
+		offset:     buffer.Position{Line: 0, Column: 0},
+		scrollOff:  5, // Default scroll offset
+		cursor:     buffer.Position{Line: 0, Column: 0},
+		showCursor: true,
 	}
 }
 
@@ -79,6 +80,11 @@ func (v *Viewport) GetCursor() buffer.Position {
 	return v.cursor
 }
 
+// ToggleCursor toggles the cursor visibility state for blinking effect
+func (v *Viewport) ToggleCursor() {
+	v.showCursor = !v.showCursor
+}
+
 // IsPositionVisible returns true if the position is within the viewport
 func (v *Viewport) IsPositionVisible(pos buffer.Position) bool {
 	return pos.Line >= v.offset.Line &&
@@ -98,52 +104,41 @@ func (v *Viewport) GetVisibleColumns() (start, end int) {
 }
 
 // renderLine processes and formats a single line of content
-func (v *Viewport) renderLine(content string, lineNum int, maxLineNumWidth int, showLineNumbers bool) string {
-	// Handle horizontal scrolling
-	runes := []rune(content)
-	colStart := v.offset.Column
-	colEnd := colStart + v.width
+func (v *Viewport) renderLine(content string, lineNum int) string {
+	lineContent := content
 
-	// Adjust for line numbers if showing them
-	if showLineNumbers {
-		colEnd -= maxLineNumWidth + 1 // +1 for spacing
-	}
-
-	lineContent := ""
-	if colStart < len(runes) {
-		if colEnd > len(runes) {
-			colEnd = len(runes)
-		}
-		lineContent = string(runes[colStart:colEnd])
-	}
-
-	// Add line numbers if requested
-	if showLineNumbers {
-		lineNum := fmt.Sprintf("%*d ", maxLineNumWidth, lineNum+1)
-		lineContent = lineNum + lineContent
-	}
-
-	// If this is the cursor line and column, style it
+	// Handle cursor rendering
 	if lineNum == v.cursor.Line {
-		// Convert lineContent to runes for proper unicode handling
-		contentRunes := []rune(lineContent)
-		cursorCol := v.cursor.Column - colStart
-		if showLineNumbers {
-			cursorCol += maxLineNumWidth + 1
-		}
+		contentRunes := []rune(content)
+		cursorCol := v.cursor.Column
+		var cursorChar string
+		var before, after string
 
-		if cursorCol >= 0 && cursorCol < len(contentRunes) {
-			// Split the line into before, cursor, and after parts
-			before := string(contentRunes[:cursorCol])
-			cursorChar := string(contentRunes[cursorCol])
-			after := ""
-			if cursorCol+1 < len(contentRunes) {
+		if len(contentRunes) == 0 {
+			// Empty line
+			before = strings.Repeat(" ", cursorCol)
+			cursorChar = " "
+			after = ""
+		} else if cursorCol >= len(contentRunes) {
+			// Cursor beyond content
+			before = content + strings.Repeat(" ", cursorCol-len(contentRunes))
+			cursorChar = " "
+			after = ""
+		} else {
+			// Cursor within content
+			before = string(contentRunes[:cursorCol])
+			cursorChar = string(contentRunes[cursorCol])
+			if cursorCol < len(contentRunes)-1 {
 				after = string(contentRunes[cursorCol+1:])
 			}
+		}
 
-			// Style the cursor character with inverse colors
+		// Style the cursor character with inverse colors if cursor should be shown
+		if v.showCursor {
 			styledCursor := lipgloss.NewStyle().Reverse(true).Render(cursorChar)
 			lineContent = before + styledCursor + after
+		} else {
+			lineContent = before + cursorChar + after
 		}
 	}
 
@@ -156,18 +151,14 @@ func (v *Viewport) renderLine(content string, lineNum int, maxLineNumWidth int, 
 }
 
 // createEmptyLine creates an empty line with proper formatting
-func (v *Viewport) createEmptyLine(maxLineNumWidth int, showLineNumbers bool) string {
-	if showLineNumbers {
-		return strings.Repeat(" ", maxLineNumWidth) + " " + strings.Repeat(" ", v.width-maxLineNumWidth-1)
-	}
+func (v *Viewport) createEmptyLine() string {
 	return strings.Repeat(" ", v.width)
 }
 
-// View returns the visible portion of the buffer content with optional line numbers
-func (v *Viewport) View(buf *buffer.Buffer, showLineNumbers bool) []string {
+// View returns the visible portion of the buffer content
+func (v *Viewport) View(buf *buffer.Buffer) []string {
 	start, end := v.GetVisibleLines()
 	result := make([]string, 0, v.height)
-	maxLineNumWidth := len(string(end))
 
 	// Render visible lines
 	for line := start; line < end && line < buf.LineCount(); line++ {
@@ -175,11 +166,11 @@ func (v *Viewport) View(buf *buffer.Buffer, showLineNumbers bool) []string {
 		if err != nil {
 			continue
 		}
-		result = append(result, v.renderLine(content, line, maxLineNumWidth, showLineNumbers))
+		result = append(result, v.renderLine(content, line))
 	}
 
 	// Fill remaining space with empty lines
-	emptyLine := v.createEmptyLine(maxLineNumWidth, showLineNumbers)
+	emptyLine := v.createEmptyLine()
 	for len(result) < v.height {
 		result = append(result, emptyLine)
 	}

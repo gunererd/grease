@@ -1,13 +1,14 @@
 package editor
 
 import (
-	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/buffer"
 	ioManager "github.com/gunererd/grease/internal/io"
+	"github.com/gunererd/grease/internal/ui"
 	"github.com/gunererd/grease/internal/viewport"
 )
 
@@ -27,6 +28,8 @@ type Model struct {
 	height          int
 	io              *ioManager.Manager
 	showLineNumbers bool
+	cursorTimer     time.Time
+	statusLine      *ui.StatusLine
 }
 
 func New(io *ioManager.Manager) *Model {
@@ -36,12 +39,19 @@ func New(io *ioManager.Manager) *Model {
 		mode:            NormalMode,
 		io:              io,
 		showLineNumbers: true,
+		statusLine:      ui.NewStatusLine(),
 	}
 }
 
 func (m *Model) Init() tea.Cmd {
-	return nil
+	// Initialize cursor blink timer
+	m.cursorTimer = time.Now()
+	return tea.Tick(time.Millisecond*530, func(t time.Time) tea.Msg {
+		return CursorBlinkMsg(t)
+	})
 }
+
+type CursorBlinkMsg time.Time
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -49,32 +59,31 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.UpdateViewport(msg.Width, msg.Height)
 	case tea.KeyMsg:
 		return m.handleKeyPress(msg)
+	case CursorBlinkMsg:
+		m.viewport.ToggleCursor()
+		return m, tea.Tick(time.Millisecond*530, func(t time.Time) tea.Msg {
+			return CursorBlinkMsg(t)
+		})
 	}
 	return m, nil
 }
 
 func (m *Model) View() string {
-	// Get visible content from viewport with line numbers
-	content := m.viewport.View(m.buffer, m.showLineNumbers)
+	// Get visible content from viewport
+	content := m.viewport.View(m.buffer)
 
 	// Add status line
-	status := m.getStatusLine()
+	statusline := m.getStatusLine()
 
 	// Combine content and status
-	return strings.Join(content, "\n") + "\n" + status
+	return strings.Join(content, "\n") + "\n" + statusline
 }
 
 func (m *Model) getStatusLine() string {
 	cursor, _ := m.buffer.GetPrimaryCursor()
 	mode := m.getModeString()
-	pos := cursor.GetPosition()
-
-	// Get relative cursor position for display
-	x, y := m.viewport.GetRelativePosition(pos)
-
-	return fmt.Sprintf("%s - Buffer[%d,%d] View[%d,%d] - %d%%",
-		mode, pos.Line+1, pos.Column+1, y+1, x+1,
-		int(float64(pos.Line+1)/float64(m.buffer.LineCount())*100))
+	x, y := m.viewport.GetRelativePosition(cursor.GetPosition())
+	return m.statusLine.Render(mode, *cursor, m.buffer.LineCount(), x, y, m.width)
 }
 
 func (m *Model) getModeString() string {
