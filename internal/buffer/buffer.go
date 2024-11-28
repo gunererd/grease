@@ -94,16 +94,16 @@ func (b *Buffer) AddCursor(pos Position, priority int) (*Cursor, error) {
 
 	cursor := NewCursor(pos, b.nextCursorID, priority)
 	b.nextCursorID++
-	
+
 	// Insert cursor in priority order
 	insertIdx := sort.Search(len(b.cursors), func(i int) bool {
 		return b.cursors[i].priority <= priority
 	})
-	
+
 	b.cursors = append(b.cursors, nil)
 	copy(b.cursors[insertIdx+1:], b.cursors[insertIdx:])
 	b.cursors[insertIdx] = cursor
-	
+
 	return cursor, nil
 }
 
@@ -142,8 +142,23 @@ func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
 	}
 
 	newPos := cursor.pos.Add(lineOffset, columnOffset)
-	if err := b.validatePosition(newPos); err != nil {
-		return err
+
+	// Validate line bounds
+	if newPos.Line < 0 || newPos.Line >= len(b.lines) {
+		return ErrInvalidLine
+	}
+
+	// When moving vertically, if target line is shorter than current column,
+	// move cursor to end of the target line
+	if lineOffset != 0 && columnOffset == 0 {
+		if newPos.Column > len(b.lines[newPos.Line]) {
+			newPos.Column = len(b.lines[newPos.Line])
+		}
+	} else {
+		// For horizontal movement, validate column bounds normally
+		if newPos.Column < 0 || newPos.Column > len(b.lines[newPos.Line]) {
+			return ErrInvalidOffset
+		}
 	}
 
 	cursor.SetPosition(newPos)
