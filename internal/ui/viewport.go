@@ -115,40 +115,53 @@ func (v *Viewport) SetMode(mode state.Mode) {
 
 // renderLine processes and formats a single line of content
 func (v *Viewport) renderLine(content string, lineNum int) string {
-	// Handle empty lines
-	if content == "" {
-		return v.createEmptyLine()
-	}
-
-	// Calculate visible portion of the line
-	start, end := v.GetVisibleColumns()
-	if start >= len(content) {
-		return v.createEmptyLine()
-	}
-
-	// Ensure we don't go past the end of the content
-	if end > len(content) {
-		end = len(content)
-	}
-
-	// Get visible portion of the line
+	// Create base content
 	visibleContent := content
-	if start < len(content) {
-		if end <= len(content) {
-			visibleContent = content[start:end]
+	if content == "" {
+		visibleContent = strings.Repeat(" ", v.width)
+	} else {
+		// Calculate visible portion of the line
+		start, end := v.GetVisibleColumns()
+		if start >= len(content) {
+			visibleContent = strings.Repeat(" ", v.width)
 		} else {
-			visibleContent = content[start:]
+			// Ensure we don't go past the end of the content
+			if end > len(content) {
+				end = len(content)
+			}
+
+			// Get visible portion of the line
+			if start < len(content) {
+				if end <= len(content) {
+					visibleContent = content[start:end]
+				} else {
+					visibleContent = content[start:]
+				}
+			}
+
+			// Pad to viewport width
+			if len(visibleContent) < v.width {
+				visibleContent += strings.Repeat(" ", v.width-len(visibleContent))
+			} else if len(visibleContent) > v.width {
+				visibleContent = visibleContent[:v.width]
+			}
 		}
 	}
 
 	// Add cursor if needed
 	if v.showCursor && v.cursor.Line == lineNum {
-		cursorCol := v.cursor.Column - start
-		if cursorCol >= 0 && cursorCol < len(visibleContent) {
+		cursorCol := v.cursor.Column - v.offset.Column
+		if cursorCol >= 0 && cursorCol < v.width {
 			// Split the line at cursor position
 			before := visibleContent[:cursorCol]
-			cursor := string(visibleContent[cursorCol])
-			after := visibleContent[cursorCol+1:]
+			cursor := " "
+			if cursorCol < len(visibleContent) {
+				cursor = string(visibleContent[cursorCol])
+			}
+			after := ""
+			if cursorCol+1 < len(visibleContent) {
+				after = visibleContent[cursorCol+1:]
+			}
 
 			// Get cursor style based on mode
 			var cursorStyle lipgloss.Style
@@ -167,13 +180,6 @@ func (v *Viewport) renderLine(content string, lineNum int) string {
 			// Combine all parts
 			visibleContent = before + styledCursor + after
 		}
-	}
-
-	// Pad or truncate to viewport width
-	if len(visibleContent) < v.width {
-		visibleContent += strings.Repeat(" ", v.width-len(visibleContent))
-	} else if len(visibleContent) > v.width {
-		visibleContent = visibleContent[:v.width]
 	}
 
 	return visibleContent
