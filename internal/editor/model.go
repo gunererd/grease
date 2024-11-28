@@ -8,22 +8,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/buffer"
 	ioManager "github.com/gunererd/grease/internal/io"
+	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/ui"
-	"github.com/gunererd/grease/internal/viewport"
-)
-
-type Mode int
-
-const (
-	NormalMode Mode = iota
-	InsertMode
-	CommandMode
 )
 
 type Model struct {
 	buffer          *buffer.Buffer
-	viewport        *viewport.Viewport
-	mode            Mode
+	viewport        *ui.Viewport
+	mode            state.Mode
 	width           int
 	height          int
 	io              *ioManager.Manager
@@ -35,8 +27,8 @@ type Model struct {
 func New(io *ioManager.Manager) *Model {
 	return &Model{
 		buffer:          buffer.New(),
-		viewport:        viewport.New(80, 24), // Default size
-		mode:            NormalMode,
+		viewport:        ui.NewViewport(80, 24), // Default size
+		mode:            state.NormalMode,
 		io:              io,
 		showLineNumbers: true,
 		statusLine:      ui.NewStatusLine(),
@@ -88,11 +80,11 @@ func (m *Model) getStatusLine() string {
 
 func (m *Model) getModeString() string {
 	switch m.mode {
-	case NormalMode:
+	case state.NormalMode:
 		return "NORMAL"
-	case InsertMode:
+	case state.InsertMode:
 		return "INSERT"
-	case CommandMode:
+	case state.CommandMode:
 		return "COMMAND"
 	default:
 		return "UNKNOWN"
@@ -107,14 +99,19 @@ func (m *Model) UpdateViewport(width, height int) {
 
 func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch m.mode {
-	case NormalMode:
+	case state.NormalMode:
 		return m.handleNormalMode(msg)
-	case InsertMode:
+	case state.InsertMode:
 		return m.handleInsertMode(msg)
-	case CommandMode:
+	case state.CommandMode:
 		return m.handleCommandMode(msg)
 	}
 	return m, nil
+}
+
+func (m *Model) SetMode(mode state.Mode) {
+	m.mode = mode
+	m.viewport.SetMode(mode)
 }
 
 func (m *Model) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -135,9 +132,9 @@ func (m *Model) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "k":
 		m.buffer.MoveCursor(cursor.GetID(), -1, 0)
 	case "i":
-		m.mode = InsertMode
+		m.SetMode(state.InsertMode)
 	case ":":
-		m.mode = CommandMode
+		m.SetMode(state.CommandMode)
 	case "q":
 		return m, tea.Quit
 	case "z":
@@ -156,7 +153,7 @@ func (m *Model) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleInsertMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEsc:
-		m.mode = NormalMode
+		m.SetMode(state.NormalMode)
 	case tea.KeyRunes:
 		m.buffer.Insert(string(msg.Runes))
 	case tea.KeyEnter:
@@ -171,10 +168,10 @@ func (m *Model) handleInsertMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleCommandMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEsc:
-		m.mode = NormalMode
+		m.SetMode(state.NormalMode)
 	case tea.KeyEnter:
 		// TODO: Handle command execution
-		m.mode = NormalMode
+		m.SetMode(state.NormalMode)
 	}
 	return m, nil
 }
