@@ -173,7 +173,7 @@ func (m *Model) handleCommandMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleCursorMovement() {
 	cursor, _ := m.buffer.GetPrimaryCursor()
 	pos := cursor.GetPosition()
-	m.viewport.ScrollTo(pos)
+	m.viewport.SetCursor(pos) // This will also handle scrolling
 }
 
 // LoadFromStdin loads content from stdin into the buffer

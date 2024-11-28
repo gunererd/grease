@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/gunererd/grease/internal/buffer"
 )
 
@@ -14,6 +15,7 @@ type Viewport struct {
 	height    int
 	offset    buffer.Position // Top-left position of viewport in buffer
 	scrollOff int             // Number of lines to keep visible above/below cursor
+	cursor    buffer.Position // Current cursor position
 }
 
 // New creates a new viewport with the given dimensions
@@ -23,6 +25,7 @@ func New(width, height int) *Viewport {
 		height:    height,
 		offset:    buffer.Position{Line: 0, Column: 0},
 		scrollOff: 5, // Default scroll offset
+		cursor:    buffer.Position{Line: 0, Column: 0},
 	}
 }
 
@@ -63,6 +66,17 @@ func (v *Viewport) ScrollTo(pos buffer.Position) {
 	} else if pos.Column >= v.offset.Column+v.width-padding {
 		v.offset.Column = pos.Column - v.width + padding + 1
 	}
+}
+
+// SetCursor sets the cursor position
+func (v *Viewport) SetCursor(pos buffer.Position) {
+	v.cursor = pos
+	v.ScrollTo(pos)
+}
+
+// GetCursor returns the current cursor position
+func (v *Viewport) GetCursor() buffer.Position {
+	return v.cursor
 }
 
 // IsPositionVisible returns true if the position is within the viewport
@@ -109,9 +123,33 @@ func (v *Viewport) renderLine(content string, lineNum int, maxLineNumWidth int, 
 		lineContent = lineNum + lineContent
 	}
 
+	// If this is the cursor line and column, style it
+	if lineNum == v.cursor.Line {
+		// Convert lineContent to runes for proper unicode handling
+		contentRunes := []rune(lineContent)
+		cursorCol := v.cursor.Column - colStart
+		if showLineNumbers {
+			cursorCol += maxLineNumWidth + 1
+		}
+
+		if cursorCol >= 0 && cursorCol < len(contentRunes) {
+			// Split the line into before, cursor, and after parts
+			before := string(contentRunes[:cursorCol])
+			cursorChar := string(contentRunes[cursorCol])
+			after := ""
+			if cursorCol+1 < len(contentRunes) {
+				after = string(contentRunes[cursorCol+1:])
+			}
+
+			// Style the cursor character with inverse colors
+			styledCursor := lipgloss.NewStyle().Reverse(true).Render(cursorChar)
+			lineContent = before + styledCursor + after
+		}
+	}
+
 	// Pad line to viewport width
-	if len(lineContent) < v.width {
-		lineContent += strings.Repeat(" ", v.width-len(lineContent))
+	if lipgloss.Width(lineContent) < v.width {
+		lineContent += strings.Repeat(" ", v.width-lipgloss.Width(lineContent))
 	}
 
 	return lineContent
