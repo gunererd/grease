@@ -3,7 +3,7 @@ package editor
 import (
 	"strings"
 
-	"github.com/gunererd/grease/internal/buffer"
+	"github.com/gunererd/grease/internal/editor/buffer"
 	"github.com/gunererd/grease/internal/navigator"
 	"github.com/gunererd/grease/internal/ui"
 )

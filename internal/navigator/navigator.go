@@ -2,8 +2,8 @@ package navigator
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gunererd/grease/internal/buffer"
-	"github.com/gunererd/grease/internal/cursor"
+	"github.com/gunererd/grease/internal/editor/buffer"
+	"github.com/gunererd/grease/internal/editor/cursor"
 )
 
 // Navigator handles navigation through a hierarchical structure
