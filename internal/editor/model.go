@@ -7,12 +7,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/buffer"
+	"github.com/gunererd/grease/internal/editor/handler"
 	ioManager "github.com/gunererd/grease/internal/io"
 	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/ui"
 )
 
-type Model struct {
+type Editor struct {
 	buffer          *buffer.Buffer
 	viewport        *ui.Viewport
 	mode            state.Mode
@@ -22,22 +23,45 @@ type Model struct {
 	showLineNumbers bool
 	cursorTimer     time.Time
 	statusLine      *ui.StatusLine
+	handlers        map[state.Mode]handler.ModeHandler
 }
 
-func New(io *ioManager.Manager) *Model {
-	return &Model{
+func New(io *ioManager.Manager) *Editor {
+	e := &Editor{
 		buffer:          buffer.New(),
 		viewport:        ui.NewViewport(80, 24), // Default size
 		mode:            state.NormalMode,
 		io:              io,
 		showLineNumbers: true,
 		statusLine:      ui.NewStatusLine(),
+		handlers: map[state.Mode]handler.ModeHandler{
+			state.NormalMode:  handler.NewNormalMode(),
+			state.InsertMode:  handler.NewInsertMode(),
+			state.CommandMode: handler.NewCommandMode(),
+		},
 	}
+	return e
 }
 
-func (m *Model) Init() tea.Cmd {
+func (e *Editor) Buffer() *buffer.Buffer {
+	return e.buffer
+}
+
+func (e *Editor) Height() int {
+	return e.height
+}
+
+func (e *Editor) Width() int {
+	return e.width
+}
+
+func (e *Editor) Viewport() *ui.Viewport {
+	return e.viewport
+}
+
+func (e *Editor) Init() tea.Cmd {
 	// Initialize cursor blink timer
-	m.cursorTimer = time.Now()
+	e.cursorTimer = time.Now()
 	return tea.Tick(time.Millisecond*530, func(t time.Time) tea.Msg {
 		return CursorBlinkMsg(t)
 	})
@@ -45,41 +69,41 @@ func (m *Model) Init() tea.Cmd {
 
 type CursorBlinkMsg time.Time
 
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (e *Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.UpdateViewport(msg.Width, msg.Height)
+		e.UpdateViewport(msg.Width, msg.Height)
 	case tea.KeyMsg:
-		return m.handleKeyPress(msg)
+		return e.handleKeyPress(msg)
 	case CursorBlinkMsg:
-		m.viewport.ToggleCursor()
-		return m, tea.Tick(time.Millisecond*530, func(t time.Time) tea.Msg {
+		e.Viewport().ToggleCursor()
+		return e, tea.Tick(time.Millisecond*530, func(t time.Time) tea.Msg {
 			return CursorBlinkMsg(t)
 		})
 	}
-	return m, nil
+	return e, nil
 }
 
-func (m *Model) View() string {
+func (e *Editor) View() string {
 	// Get visible content from viewport
-	content := m.viewport.View(m.buffer)
+	content := e.Viewport().View(e.Buffer())
 
 	// Add status line
-	statusline := m.getStatusLine()
+	statusline := e.getStatusLine()
 
 	// Combine content and status
 	return strings.Join(content, "\n") + "\n" + statusline
 }
 
-func (m *Model) getStatusLine() string {
-	cursor, _ := m.buffer.GetPrimaryCursor()
-	mode := m.getModeString()
-	x, y := m.viewport.GetRelativePosition(cursor.GetPosition())
-	return m.statusLine.Render(mode, *cursor, m.buffer.LineCount(), x, y, m.width)
+func (e *Editor) getStatusLine() string {
+	cursor, _ := e.Buffer().GetPrimaryCursor()
+	mode := e.getModeString()
+	x, y := e.Viewport().GetRelativePosition(cursor.GetPosition())
+	return e.statusLine.Render(mode, *cursor, e.Buffer().LineCount(), x, y, e.Width())
 }
 
-func (m *Model) getModeString() string {
-	switch m.mode {
+func (e *Editor) getModeString() string {
+	switch e.mode {
 	case state.NormalMode:
 		return "NORMAL"
 	case state.InsertMode:
@@ -91,125 +115,42 @@ func (m *Model) getModeString() string {
 	}
 }
 
-func (m *Model) UpdateViewport(width, height int) {
-	m.width = width
-	m.height = height
-	m.viewport.SetSize(width, height-1) // Reserve one line for status
+func (e *Editor) UpdateViewport(width, height int) {
+	e.width = width
+	e.height = height
+	e.Viewport().SetSize(width, height-1) // Reserve one line for status
 }
 
-func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch m.mode {
-	case state.NormalMode:
-		return m.handleNormalMode(msg)
-	case state.InsertMode:
-		return m.handleInsertMode(msg)
-	case state.CommandMode:
-		return m.handleCommandMode(msg)
+func (e *Editor) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if handler, ok := e.handlers[e.mode]; ok {
+		return handler.Handle(msg, e)
 	}
-	return m, nil
+	return e, nil
 }
 
-func (m *Model) SetMode(mode state.Mode) {
-	m.mode = mode
-	m.viewport.SetMode(mode)
+func (e *Editor) SetMode(mode state.Mode) {
+	e.mode = mode
+	e.Viewport().SetMode(mode)
 }
 
-func (m *Model) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	cursor, err := m.buffer.GetPrimaryCursor()
-	if err != nil {
-		return m, nil
-	}
-
-	switch msg.String() {
-	case "ctrl+c":
-		return m, tea.Quit
-	case "h":
-		m.buffer.MoveCursor(cursor.GetID(), 0, -1)
-	case "l":
-		m.buffer.MoveCursor(cursor.GetID(), 0, 1)
-	case "j":
-		m.buffer.MoveCursor(cursor.GetID(), 1, 0)
-	case "k":
-		m.buffer.MoveCursor(cursor.GetID(), -1, 0)
-	case "i":
-		m.SetMode(state.InsertMode)
-	case ":":
-		m.SetMode(state.CommandMode)
-	case "q":
-		return m, tea.Quit
-	case "z":
-		// Center viewport on cursor
-		cursor, _ := m.buffer.GetPrimaryCursor()
-		m.viewport.CenterOn(cursor.GetPosition())
-	case "zz":
-		// Toggle line numbers
-		m.showLineNumbers = !m.showLineNumbers
-		m.UpdateViewport(m.width, m.height) // Refresh viewport size
-	}
-	m.handleCursorMovement()
-	return m, nil
-}
-
-func (m *Model) handleInsertMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	cursor, err := m.buffer.GetPrimaryCursor()
-	if err != nil {
-		return m, nil
-	}
-
-	switch msg.Type {
-	case tea.KeyEsc:
-		m.SetMode(state.NormalMode)
-	case tea.KeyRunes:
-		m.buffer.Insert(string(msg.Runes))
-	case tea.KeyEnter:
-		m.buffer.Insert("\n")
-	case tea.KeyBackspace:
-		m.buffer.Delete(1)
-	default:
-		switch msg.String() {
-		case "up":
-			m.buffer.MoveCursor(cursor.GetID(), -1, 0)
-		case "down":
-			m.buffer.MoveCursor(cursor.GetID(), 1, 0)
-		case "left":
-			m.buffer.MoveCursor(cursor.GetID(), 0, -1)
-		case "right":
-			m.buffer.MoveCursor(cursor.GetID(), 0, 1)
-		}
-	}
-	m.handleCursorMovement()
-	return m, nil
-}
-
-func (m *Model) handleCommandMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.Type {
-	case tea.KeyEsc:
-		m.SetMode(state.NormalMode)
-	case tea.KeyEnter:
-		// TODO: Handle command execution
-		m.SetMode(state.NormalMode)
-	}
-	return m, nil
-}
-
-func (m *Model) handleCursorMovement() {
-	cursor, _ := m.buffer.GetPrimaryCursor()
+func (e *Editor) HandleCursorMovement() {
+	cursor, _ := e.Buffer().GetPrimaryCursor()
 	pos := cursor.GetPosition()
-	m.viewport.SetCursor(pos) // This will also handle scrolling
+	e.Viewport().SetCursor(pos) // This will also handle scrolling
 }
 
 // LoadFromStdin loads content from stdin into the buffer
-func (m *Model) LoadFromStdin() error {
-	return m.buffer.LoadFromReader(os.Stdin)
+func (e *Editor) LoadFromStdin() error {
+	return e.Buffer().LoadFromReader(os.Stdin)
 }
 
 // AddCursor adds a new cursor at the specified position
-func (m *Model) AddCursor(pos buffer.Position) error {
-	_, err := m.buffer.AddCursor(pos, 50) // Regular cursors get normal priority
+func (e *Editor) AddCursor(pos buffer.Position) error {
+	_, err := e.Buffer().AddCursor(pos, 50) // Regular cursors get normal priority
 	return err
 }
 
 // RemoveCursor removes a cursor by its ID
-func (m *Model) RemoveCursor(id int) {
-	m.buffer.RemoveCursor(id)
+func (e *Editor) RemoveCursor(id int) {
+	e.Buffer().RemoveCursor(id)
 }
