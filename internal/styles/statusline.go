@@ -18,6 +18,11 @@ var (
 			Background(lipgloss.Color("#5f8700")).
 			Foreground(lipgloss.Color("#ffffff"))
 
+	visualModeStyle = baseStatusStyle.
+			Bold(true).
+			Background(lipgloss.Color("#875f00")).
+			Foreground(lipgloss.Color("#ffffff"))
+
 	commandModeStyle = baseStatusStyle.
 				Bold(true).
 				Background(lipgloss.Color("#af5f00")).
@@ -48,6 +53,8 @@ func (s *StatusLineStyle) GetModeStyle(mode string) lipgloss.Style {
 		return normalModeStyle
 	case "INSERT":
 		return insertModeStyle
+	case "VISUAL":
+		return visualModeStyle
 	case "COMMAND":
 		return commandModeStyle
 	default:

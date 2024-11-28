@@ -37,6 +37,7 @@ func New(io *ioManager.Manager) *Editor {
 		handlers: map[state.Mode]handler.ModeHandler{
 			state.NormalMode:  handler.NewNormalMode(),
 			state.InsertMode:  handler.NewInsertMode(),
+			state.VisualMode:  handler.NewVisualMode(),
 			state.CommandMode: handler.NewCommandMode(),
 		},
 	}
@@ -108,6 +109,8 @@ func (e *Editor) getModeString() string {
 		return "NORMAL"
 	case state.InsertMode:
 		return "INSERT"
+	case state.VisualMode:
+		return "VISUAL"
 	case state.CommandMode:
 		return "COMMAND"
 	default:

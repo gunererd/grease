@@ -6,21 +6,21 @@ import (
 	"github.com/gunererd/grease/internal/types"
 )
 
-type NormalMode struct{}
+type VisualMode struct{}
 
-func NewNormalMode() *NormalMode {
-	return &NormalMode{}
+func NewVisualMode() *VisualMode {
+	return &VisualMode{}
 }
 
-func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd) {
+func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd) {
 	cursor, err := e.Buffer().GetPrimaryCursor()
 	if err != nil {
 		return e, nil
 	}
 
 	switch msg.String() {
-	case "ctrl+c":
-		return e, tea.Quit
+	case "esc":
+		e.SetMode(state.NormalMode)
 	case "h":
 		e.Buffer().MoveCursor(cursor.GetID(), 0, -1)
 	case "l":
@@ -31,8 +31,6 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		e.Buffer().MoveCursor(cursor.GetID(), -1, 0)
 	case "i":
 		e.SetMode(state.InsertMode)
-	case "v":
-		e.SetMode(state.VisualMode)
 	case ":":
 		e.SetMode(state.CommandMode)
 	case "q":
