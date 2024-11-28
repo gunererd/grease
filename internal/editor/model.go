@@ -151,6 +151,11 @@ func (m *Model) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) handleInsertMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	cursor, err := m.buffer.GetPrimaryCursor()
+	if err != nil {
+		return m, nil
+	}
+
 	switch msg.Type {
 	case tea.KeyEsc:
 		m.SetMode(state.NormalMode)
@@ -160,6 +165,17 @@ func (m *Model) handleInsertMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.buffer.Insert("\n")
 	case tea.KeyBackspace:
 		m.buffer.Delete(1)
+	default:
+		switch msg.String() {
+		case "up":
+			m.buffer.MoveCursor(cursor.GetID(), -1, 0)
+		case "down":
+			m.buffer.MoveCursor(cursor.GetID(), 1, 0)
+		case "left":
+			m.buffer.MoveCursor(cursor.GetID(), 0, -1)
+		case "right":
+			m.buffer.MoveCursor(cursor.GetID(), 0, 1)
+		}
 	}
 	m.handleCursorMovement()
 	return m, nil
