@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/gunererd/grease/internal/buffer"
+	"github.com/gunererd/grease/internal/types"
 )
 
 // StatusLine represents the editor's status line
@@ -14,14 +14,14 @@ type StatusLine struct {
 }
 
 // NewStatusLine creates a new StatusLine
-func NewStatusLine() *StatusLine {
+func NewStatusLine() types.StatusLine {
 	return &StatusLine{
 		styles: NewStatusLineStyle(),
 	}
 }
 
 // Render renders the status line with the given editor state
-func (s *StatusLine) Render(mode string, cursor buffer.Cursor, bufferLineCount int, viewX, viewY int, width int) string {
+func (s *StatusLine) Render(mode string, cursor types.Cursor, bufferLineCount int, viewX, viewY int, width int) string {
 	pos := cursor.GetPosition()
 	progress := int(float64(pos.Line()+1) / float64(bufferLineCount) * 100)
 

@@ -20,7 +20,7 @@ var (
 // Buffer represents the text content and provides operations to modify it
 type Buffer struct {
 	lines   [][]rune // each line is a slice of runes
-	cursors []*Cursor
+	cursors []types.Cursor
 	mu      sync.RWMutex
 
 	nextCursorID int
@@ -86,7 +86,7 @@ func (b *Buffer) LoadFromReader(r io.Reader) error {
 }
 
 // AddCursor adds a new cursor at the specified position
-func (b *Buffer) AddCursor(pos Position, priority int) (*Cursor, error) {
+func (b *Buffer) AddCursor(pos types.Position, priority int) (types.Cursor, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -99,7 +99,7 @@ func (b *Buffer) AddCursor(pos Position, priority int) (*Cursor, error) {
 
 	// Insert cursor in priority order
 	insertIdx := sort.Search(len(b.cursors), func(i int) bool {
-		return b.cursors[i].priority <= priority
+		return b.cursors[i].GetPriority() <= priority
 	})
 
 	b.cursors = append(b.cursors, nil)
@@ -115,7 +115,7 @@ func (b *Buffer) RemoveCursor(id int) {
 	defer b.mu.Unlock()
 
 	for i, c := range b.cursors {
-		if c.id == id {
+		if c.ID() == id {
 			b.cursors = append(b.cursors[:i], b.cursors[i+1:]...)
 			return
 		}
@@ -123,7 +123,7 @@ func (b *Buffer) RemoveCursor(id int) {
 }
 
 // GetPrimaryCursor returns the highest priority cursor
-func (b *Buffer) GetPrimaryCursor() (*Cursor, error) {
+func (b *Buffer) GetPrimaryCursor() (types.Cursor, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -143,7 +143,7 @@ func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
 		return ErrNoCursor
 	}
 
-	newPos := cursor.pos.Add(lineOffset, columnOffset)
+	newPos := cursor.GetPosition().Add(lineOffset, columnOffset)
 
 	// Validate line bounds
 	if newPos.Line() < 0 || newPos.Line() >= len(b.lines) {
@@ -178,22 +178,22 @@ func (b *Buffer) Insert(text string) error {
 	}
 
 	// Sort cursors in reverse order to handle insertions from bottom to top
-	cursors := make([]*Cursor, len(b.cursors))
+	cursors := make([]types.Cursor, len(b.cursors))
 	copy(cursors, b.cursors)
 	sort.Slice(cursors, func(i, j int) bool {
-		return cursors[j].pos.Before(cursors[i].pos)
+		return cursors[j].GetPosition().Before(cursors[i].GetPosition())
 	})
 
 	for _, cursor := range cursors {
-		if err := b.insertAt(cursor.pos, text); err != nil {
+		if err := b.insertAt(cursor.GetPosition(), text); err != nil {
 			return err
 		}
 		// Update cursor position
 		if text == "\n" {
-			cursor.SetPosition(NewPosition(cursor.pos.Line()+1, 0))
+			cursor.SetPosition(NewPosition(cursor.GetPosition().Line()+1, 0))
 		} else {
-			col := cursor.pos.Column() + len([]rune(text))
-			cursor.SetPosition(NewPosition(cursor.pos.Line(), col))
+			col := cursor.GetPosition().Column() + len([]rune(text))
+			cursor.SetPosition(NewPosition(cursor.GetPosition().Line(), col))
 		}
 	}
 
@@ -232,14 +232,14 @@ func (b *Buffer) Delete(count int) error {
 	}
 
 	// Sort cursors in reverse order to handle deletions from bottom to top
-	cursors := make([]*Cursor, len(b.cursors))
+	cursors := make([]types.Cursor, len(b.cursors))
 	copy(cursors, b.cursors)
 	sort.Slice(cursors, func(i, j int) bool {
-		return cursors[j].pos.Before(cursors[i].pos)
+		return cursors[j].GetPosition().Before(cursors[i].GetPosition())
 	})
 
 	for _, cursor := range cursors {
-		if err := b.deleteAt(cursor.pos, count); err != nil {
+		if err := b.deleteAt(cursor.GetPosition(), count); err != nil {
 			return err
 		}
 	}
@@ -305,7 +305,7 @@ func (b *Buffer) LineLen(line int) (int, error) {
 }
 
 // validatePosition checks if a position is valid within the buffer
-func (b *Buffer) validatePosition(pos Position) error {
+func (b *Buffer) validatePosition(pos types.Position) error {
 	if pos.Line() < 0 || pos.Line() >= len(b.lines) {
 		return ErrInvalidLine
 	}
@@ -316,9 +316,9 @@ func (b *Buffer) validatePosition(pos Position) error {
 }
 
 // findCursor finds a cursor by its ID (internal method)
-func (b *Buffer) findCursor(id int) *Cursor {
+func (b *Buffer) findCursor(id int) types.Cursor {
 	for _, c := range b.cursors {
-		if c.id == id {
+		if c.ID() == id {
 			return c
 		}
 	}

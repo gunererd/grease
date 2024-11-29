@@ -23,7 +23,7 @@ type Viewport struct {
 }
 
 // NewViewport creates a new viewport with the given dimensions
-func NewViewport(width, height int) *Viewport {
+func NewViewport(width, height int) types.Viewport {
 	return &Viewport{
 		width:       width,
 		height:      height,
@@ -195,7 +195,7 @@ func (v *Viewport) createEmptyLine() string {
 }
 
 // View returns the visible portion of the buffer content
-func (v *Viewport) View(buf *buffer.Buffer) []string {
+func (v *Viewport) View(buf types.Buffer) []string {
 	start, end := v.GetVisibleLines()
 	result := make([]string, 0, v.height)
 

@@ -6,45 +6,46 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/editor/handler"
 	ioManager "github.com/gunererd/grease/internal/io"
 	"github.com/gunererd/grease/internal/state"
-	"github.com/gunererd/grease/internal/ui"
+	"github.com/gunererd/grease/internal/types"
 )
 
 type Editor struct {
-	buffer          *buffer.Buffer
-	viewport        *ui.Viewport
-	mode            state.Mode
-	width           int
-	height          int
-	io              *ioManager.Manager
-	showLineNumbers bool
-	cursorTimer     time.Time
-	statusLine      *ui.StatusLine
-	handlers        map[state.Mode]handler.ModeHandler
+	buffer           types.Buffer
+	viewport         types.Viewport
+	mode             state.Mode
+	width            int
+	height           int
+	io               *ioManager.Manager
+	showLineNumbers  bool
+	cursorTimer      time.Time
+	statusLine       types.StatusLine
+	handlers         map[state.Mode]handler.ModeHandler
+	highlightManager types.HighlightManager
 }
 
-func New(io *ioManager.Manager) *Editor {
+func New(io *ioManager.Manager, b types.Buffer, sl types.StatusLine, wp types.Viewport, hm types.HighlightManager) *Editor {
 	e := &Editor{
-		buffer:          buffer.New(),
-		viewport:        ui.NewViewport(80, 24), // Default size
+		buffer:          b,
+		viewport:        wp, // Default size
 		mode:            state.NormalMode,
 		io:              io,
 		showLineNumbers: true,
-		statusLine:      ui.NewStatusLine(),
+		statusLine:      sl,
 		handlers: map[state.Mode]handler.ModeHandler{
 			state.NormalMode:  handler.NewNormalMode(),
 			state.InsertMode:  handler.NewInsertMode(),
 			state.VisualMode:  handler.NewVisualMode(),
 			state.CommandMode: handler.NewCommandMode(),
 		},
+		highlightManager: hm,
 	}
 	return e
 }
 
-func (e *Editor) Buffer() *buffer.Buffer {
+func (e *Editor) Buffer() types.Buffer {
 	return e.buffer
 }
 
@@ -56,8 +57,12 @@ func (e *Editor) Width() int {
 	return e.width
 }
 
-func (e *Editor) Viewport() *ui.Viewport {
+func (e *Editor) Viewport() types.Viewport {
 	return e.viewport
+}
+
+func (e *Editor) HighlightManager() types.HighlightManager {
+	return e.highlightManager
 }
 
 func (e *Editor) Init() tea.Cmd {
@@ -100,7 +105,7 @@ func (e *Editor) getStatusLine() string {
 	cursor, _ := e.Buffer().GetPrimaryCursor()
 	mode := e.getModeString()
 	x, y := e.Viewport().GetRelativePosition(cursor.GetPosition())
-	return e.statusLine.Render(mode, *cursor, e.Buffer().LineCount(), x, y, e.Width())
+	return e.statusLine.Render(mode, cursor, e.Buffer().LineCount(), x, y, e.Width())
 }
 
 func (e *Editor) getModeString() string {
@@ -148,7 +153,7 @@ func (e *Editor) LoadFromStdin() error {
 }
 
 // AddCursor adds a new cursor at the specified position
-func (e *Editor) AddCursor(pos buffer.Position) error {
+func (e *Editor) AddCursor(pos types.Position) error {
 	_, err := e.Buffer().AddCursor(pos, 50) // Regular cursors get normal priority
 	return err
 }

@@ -10,7 +10,7 @@ type Cursor struct {
 }
 
 // NewCursor creates a new cursor at the given position
-func NewCursor(pos Position, id, priority int) *Cursor {
+func NewCursor(pos types.Position, id, priority int) types.Cursor {
 	return &Cursor{
 		pos:      pos,
 		id:       id,
@@ -29,7 +29,7 @@ func (c *Cursor) SetPosition(pos types.Position) {
 }
 
 // GetID returns the cursor's unique identifier
-func (c *Cursor) GetID() int {
+func (c *Cursor) ID() int {
 	return c.id
 }
 
