@@ -78,7 +78,15 @@ func (m *Manager) GetForLine(line int) []types.Highlight {
 
 	var result []types.Highlight
 	for _, h := range m.highlights {
-		if line >= h.GetStartPosition().Line() && line <= h.GetEndPosition().Line() {
+		start := h.GetStartPosition()
+		end := h.GetEndPosition()
+
+		// If end is before start, swap them
+		if end.Line() < start.Line() || (end.Line() == start.Line() && end.Column() < start.Column()) {
+			start, end = end, start
+		}
+
+		if line >= start.Line() && line <= end.Line() {
 			result = append(result, h)
 		}
 	}

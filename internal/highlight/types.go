@@ -62,25 +62,34 @@ func (h *highlight) GetPriority() int {
 
 // Contains checks if a position is within this highlight
 func (h *highlight) Contains(pos types.Position) bool {
+	// Determine actual start and end positions based on line/column ordering
+	start := h.startPosition
+	end := h.endPosition
+
+	// If end is before start, swap them
+	if end.Line() < start.Line() || (end.Line() == start.Line() && end.Column() < start.Column()) {
+		start, end = end, start
+	}
+
 	// If highlight is on a single line
-	if h.startPosition.Line() == h.endPosition.Line() {
-		return pos.Line() == h.startPosition.Line() &&
-			pos.Column() >= h.startPosition.Column() &&
-			pos.Column() <= h.endPosition.Column()
+	if start.Line() == end.Line() {
+		return pos.Line() == start.Line() &&
+			pos.Column() >= start.Column() &&
+			pos.Column() <= end.Column()
 	}
 
 	// If position is on first line
-	if pos.Line() == h.startPosition.Line() {
-		return pos.Column() >= h.startPosition.Column()
+	if pos.Line() == start.Line() {
+		return pos.Column() >= start.Column()
 	}
 
 	// If position is on last line
-	if pos.Line() == h.endPosition.Line() {
-		return pos.Column() <= h.endPosition.Column()
+	if pos.Line() == end.Line() {
+		return pos.Column() <= end.Column()
 	}
 
-	// If position is between first and last line
-	return pos.Line() > h.startPosition.Line() && pos.Line() < h.endPosition.Line()
+	// If position is between first and last line (inclusive)
+	return pos.Line() >= start.Line() && pos.Line() <= end.Line()
 }
 
 // NewHighlight creates a new highlight

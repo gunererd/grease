@@ -18,6 +18,7 @@ func main() {
 	buffer := buffer.New()
 	statusLine := ui.NewStatusLine()
 	viewport := ui.NewViewport(0, 0)
+	viewport.SetHighlightManager(highlightManager)
 	m := editor.New(manager, buffer, statusLine, viewport, highlightManager)
 
 	// Load content from stdin if it's not a terminal

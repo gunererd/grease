@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"log"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/highlight"
 	"github.com/gunererd/grease/internal/state"
@@ -30,31 +32,44 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		h.highlightID = e.HighlightManager().Add(
 			highlight.CreateVisualHighlight(h.selectionStart, h.selectionStart),
 		)
+		if h.highlightID == -1 {
+			log.Printf("Failed to create visual highlight at position %v", h.selectionStart)
+		}
 	}
 
 	switch msg.String() {
 	case "esc":
 		// Clear highlight when exiting visual mode
-		e.HighlightManager().Remove(h.highlightID)
-		h.highlightID = -1
+		if h.highlightID != -1 {
+			e.HighlightManager().Remove(h.highlightID)
+			h.highlightID = -1
+		}
 		e.SetMode(state.NormalMode)
 	case "h":
 		e.Buffer().MoveCursor(cursor.ID(), 0, -1)
+		e.HandleCursorMovement()
 	case "l":
 		e.Buffer().MoveCursor(cursor.ID(), 0, 1)
+		e.HandleCursorMovement()
 	case "j":
 		e.Buffer().MoveCursor(cursor.ID(), 1, 0)
+		e.HandleCursorMovement()
 	case "k":
 		e.Buffer().MoveCursor(cursor.ID(), -1, 0)
+		e.HandleCursorMovement()
 	case "i":
 		// Clear highlight when entering insert mode
-		e.HighlightManager().Remove(h.highlightID)
-		h.highlightID = -1
+		if h.highlightID != -1 {
+			e.HighlightManager().Remove(h.highlightID)
+			h.highlightID = -1
+		}
 		e.SetMode(state.InsertMode)
 	case ":":
 		// Clear highlight when entering command mode
-		e.HighlightManager().Remove(h.highlightID)
-		h.highlightID = -1
+		if h.highlightID != -1 {
+			e.HighlightManager().Remove(h.highlightID)
+			h.highlightID = -1
+		}
 		e.SetMode(state.CommandMode)
 	case "q":
 		return e, tea.Quit
@@ -68,10 +83,15 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 	if h.highlightID != -1 {
 		currentPos := cursor.GetPosition()
 		var iposition types.Position = currentPos
-		e.HighlightManager().Update(
+		if !e.HighlightManager().Update(
 			h.highlightID,
 			highlight.CreateVisualHighlight(h.selectionStart, iposition),
-		)
+		) {
+			log.Printf("Failed to update visual highlight %d from %v to %v",
+				h.highlightID, h.selectionStart, currentPos)
+			// Reset highlight state since update failed
+			h.highlightID = -1
+		}
 	}
 
 	e.HandleCursorMovement()

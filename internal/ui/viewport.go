@@ -6,33 +6,36 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gunererd/grease/internal/buffer"
+	"github.com/gunererd/grease/internal/highlight"
 	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
 
 // Viewport represents a view into a portion of the buffer
 type Viewport struct {
-	width       int
-	height      int
-	offset      types.Position // Top-left position of viewport in buffer
-	scrollOff   int            // Number of lines to keep visible above/below cursor
-	cursor      types.Position // Current cursor position
-	showCursor  bool           // Controls cursor blinking state
-	cursorStyle *buffer.CursorStyle
-	mode        state.Mode
+	width            int
+	height           int
+	offset           types.Position // Top-left position of viewport in buffer
+	scrollOff        int            // Number of lines to keep visible above/below cursor
+	cursor           types.Position // Current cursor position
+	showCursor       bool           // Controls cursor blinking state
+	cursorStyle      *buffer.CursorStyle
+	mode             state.Mode
+	highlightManager types.HighlightManager
 }
 
 // NewViewport creates a new viewport with the given dimensions
 func NewViewport(width, height int) types.Viewport {
 	return &Viewport{
-		width:       width,
-		height:      height,
-		offset:      buffer.NewPosition(0, 0),
-		scrollOff:   5,
-		cursor:      buffer.NewPosition(0, 0),
-		showCursor:  true,
-		cursorStyle: buffer.NewCursorStyle(),
-		mode:        state.NormalMode,
+		width:            width,
+		height:           height,
+		offset:           buffer.NewPosition(0, 0),
+		scrollOff:        5,
+		cursor:           buffer.NewPosition(0, 0),
+		showCursor:       true,
+		cursorStyle:      buffer.NewCursorStyle(),
+		mode:             state.NormalMode,
+		highlightManager: nil,
 	}
 }
 
@@ -91,7 +94,10 @@ func (v *Viewport) GetCursor() types.Position {
 
 // ToggleCursor toggles the cursor visibility state for blinking effect
 func (v *Viewport) ToggleCursor() {
-	v.showCursor = !v.showCursor
+	// Don't toggle cursor in visual mode - keep it always visible
+	if v.mode != state.VisualMode {
+		v.showCursor = !v.showCursor
+	}
 }
 
 // IsPositionVisible returns true if the position is within the viewport
@@ -115,6 +121,15 @@ func (v *Viewport) GetVisibleColumns() (start, end int) {
 // SetMode sets the current editor mode
 func (v *Viewport) SetMode(mode state.Mode) {
 	v.mode = mode
+	// Disable cursor blinking in visual mode since we show selection
+	if mode == state.VisualMode {
+		v.showCursor = true // Keep cursor always visible in visual mode
+	}
+}
+
+// SetHighlightManager sets the highlight manager for the viewport
+func (v *Viewport) SetHighlightManager(hm types.HighlightManager) {
+	v.highlightManager = hm
 }
 
 // renderLine processes and formats a single line of content
@@ -152,21 +167,31 @@ func (v *Viewport) renderLine(content string, lineNum int) string {
 		}
 	}
 
-	// Add cursor if needed
-	if v.showCursor && v.cursor.Line() == lineNum {
-		cursorCol := v.cursor.Column() - v.offset.Column()
-		if cursorCol >= 0 && cursorCol < v.width {
-			// Split the line at cursor position
-			before := visibleContent[:cursorCol]
-			cursor := " "
-			if cursorCol < len(visibleContent) {
-				cursor = string(visibleContent[cursorCol])
-			}
-			after := ""
-			if cursorCol+1 < len(visibleContent) {
-				after = visibleContent[cursorCol+1:]
-			}
+	// Convert visibleContent to runes for easier manipulation
+	runes := []rune(visibleContent)
+	result := make([]rune, 0, len(runes))
 
+	// Create highlight style
+	style := highlight.NewStyle()
+
+	// Track current position
+	currentCol := v.offset.Column()
+
+	// Get highlights for this line
+	var highlights []types.Highlight
+	if v.highlightManager != nil {
+		highlights = v.highlightManager.GetForLine(lineNum)
+	}
+
+	// Process each character
+	for i, r := range runes {
+		col := currentCol + i
+		pos := buffer.NewPosition(lineNum, col)
+
+		// Check if this is the cursor position
+		isCursor := v.showCursor && v.cursor.Line() == lineNum && v.cursor.Column() == col
+
+		if isCursor {
 			// Get cursor style based on mode
 			var cursorStyle lipgloss.Style
 			switch v.mode {
@@ -177,16 +202,31 @@ func (v *Viewport) renderLine(content string, lineNum int) string {
 			default:
 				cursorStyle = v.cursorStyle.GetNormalStyle()
 			}
+			// Apply cursor style
+			result = append(result, []rune(cursorStyle.Render(string(r)))...)
+		} else if len(highlights) > 0 {
+			// Find applicable highlight
+			var activeHighlight types.Highlight
+			for _, h := range highlights {
+				if h.Contains(pos) {
+					activeHighlight = h
+					break
+				}
+			}
 
-			// Style the cursor
-			styledCursor := cursorStyle.Render(cursor)
-
-			// Combine all parts
-			visibleContent = before + styledCursor + after
+			// Apply highlight style if needed
+			if activeHighlight != nil {
+				highlightStyle := style.GetStyle(activeHighlight.GetType())
+				result = append(result, []rune(highlightStyle.Render(string(r)))...)
+			} else {
+				result = append(result, r)
+			}
+		} else {
+			result = append(result, r)
 		}
 	}
 
-	return visibleContent
+	return string(result)
 }
 
 // createEmptyLine creates an empty line with proper formatting

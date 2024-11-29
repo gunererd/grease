@@ -25,4 +25,5 @@ type Viewport interface {
 	ScrollDown(lines int)
 	ScrollLeft(cols int)
 	ScrollRight(cols int)
+	SetHighlightManager(hm HighlightManager)
 }

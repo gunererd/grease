@@ -23,12 +23,16 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		return e, tea.Quit
 	case "h":
 		e.Buffer().MoveCursor(cursor.ID(), 0, -1)
+		e.HandleCursorMovement()
 	case "l":
 		e.Buffer().MoveCursor(cursor.ID(), 0, 1)
+		e.HandleCursorMovement()
 	case "j":
 		e.Buffer().MoveCursor(cursor.ID(), 1, 0)
+		e.HandleCursorMovement()
 	case "k":
 		e.Buffer().MoveCursor(cursor.ID(), -1, 0)
+		e.HandleCursorMovement()
 	case "i":
 		e.SetMode(state.InsertMode)
 	case "v":
@@ -43,6 +47,5 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		e.Viewport().CenterOn(cursor.GetPosition())
 	}
 
-	e.HandleCursorMovement()
 	return e, nil
 }
