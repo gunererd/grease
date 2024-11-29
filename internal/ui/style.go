@@ -1,6 +1,14 @@
-package styles
+package ui
 
 import "github.com/charmbracelet/lipgloss"
+
+// ViewportStyle provides styling functions for the viewport
+type ViewportStyle struct{}
+
+// NewViewportStyle creates a new ViewportStyle provider
+func NewViewportStyle() *ViewportStyle {
+	return &ViewportStyle{}
+}
 
 var (
 	baseStatusStyle = lipgloss.NewStyle().

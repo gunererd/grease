@@ -6,18 +6,17 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gunererd/grease/internal/buffer"
-	"github.com/gunererd/grease/internal/styles"
 )
 
 // StatusLine represents the editor's status line
 type StatusLine struct {
-	styles *styles.StatusLineStyle
+	styles *StatusLineStyle
 }
 
 // NewStatusLine creates a new StatusLine
 func NewStatusLine() *StatusLine {
 	return &StatusLine{
-		styles: styles.NewStatusLineStyle(),
+		styles: NewStatusLineStyle(),
 	}
 }
 
@@ -33,10 +32,10 @@ func (s *StatusLine) Render(mode string, cursor buffer.Cursor, bufferLineCount i
 	progressIndicator := s.styles.GetProgressStyle().Render(fmt.Sprintf("%d%%", progress))
 
 	// Calculate the total width of all fixed components
-	fixedWidth := lipgloss.Width(modeIndicator) + 
-		lipgloss.Width(bufferPos) + 
-		lipgloss.Width(viewPos) + 
-		lipgloss.Width(progressIndicator) + 
+	fixedWidth := lipgloss.Width(modeIndicator) +
+		lipgloss.Width(bufferPos) +
+		lipgloss.Width(viewPos) +
+		lipgloss.Width(progressIndicator) +
 		3 // for spaces between components
 
 	// Create a flexible space that fills the remaining width

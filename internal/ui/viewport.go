@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/state"
-	"github.com/gunererd/grease/internal/styles"
 )
 
 // Viewport represents a view into a portion of the buffer
@@ -18,7 +17,7 @@ type Viewport struct {
 	scrollOff   int             // Number of lines to keep visible above/below cursor
 	cursor      buffer.Position // Current cursor position
 	showCursor  bool            // Controls cursor blinking state
-	cursorStyle *styles.CursorStyle
+	cursorStyle *buffer.CursorStyle
 	mode        state.Mode
 }
 
@@ -31,7 +30,7 @@ func NewViewport(width, height int) *Viewport {
 		scrollOff:   5,
 		cursor:      buffer.Position{},
 		showCursor:  true,
-		cursorStyle: styles.NewCursorStyle(),
+		cursorStyle: buffer.NewCursorStyle(),
 		mode:        state.NormalMode,
 	}
 }
