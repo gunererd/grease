@@ -1,38 +1,50 @@
 package buffer
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/gunererd/grease/internal/types"
+)
 
 // Position represents a position in the buffer
 type Position struct {
-	Line   int
-	Column int
+	line   int
+	column int
 }
 
 // String returns a string representation of the position
 func (p Position) String() string {
-	return fmt.Sprintf("%d:%d", p.Line+1, p.Column+1)
+	return fmt.Sprintf("%d:%d", p.line+1, p.column+1)
 }
 
 // Before returns true if this position is before other position
-func (p Position) Before(other Position) bool {
-	if p.Line < other.Line {
+func (p Position) Before(other types.Position) bool {
+	if p.line < other.Line() {
 		return true
 	}
-	if p.Line == other.Line {
-		return p.Column < other.Column
+	if p.line == other.Line() {
+		return p.column < other.Column()
 	}
 	return false
 }
 
 // Equal returns true if this position is equal to other position
-func (p Position) Equal(other Position) bool {
-	return p.Line == other.Line && p.Column == other.Column
+func (p Position) Equal(other types.Position) bool {
+	return p.line == other.Line() && p.column == other.Column()
+}
+
+func (p Position) Line() int {
+	return p.line
+}
+
+func (p Position) Column() int {
+	return p.column
 }
 
 // Add returns a new position offset by the given line and column
-func (p Position) Add(line, col int) Position {
+func (p Position) Add(line, col int) types.Position {
 	return Position{
-		Line:   p.Line + line,
-		Column: p.Column + col,
+		line:   p.line + line,
+		column: p.column + col,
 	}
 }
