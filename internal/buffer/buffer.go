@@ -7,6 +7,8 @@ import (
 	"sort"
 	"sync"
 	"unicode/utf8"
+
+	"github.com/gunererd/grease/internal/types"
 )
 
 var (
@@ -30,7 +32,7 @@ func New() *Buffer {
 		lines: [][]rune{{}}, // start with one empty line
 	}
 	// Create primary cursor at start of buffer
-	b.AddCursor(Position{Line: 0, Column: 0}, 100) // Primary cursor gets high priority
+	b.AddCursor(NewPosition(0, 0), 100) // Primary cursor gets high priority
 	return b
 }
 
@@ -59,7 +61,7 @@ func NewFromString(content string) *Buffer {
 	}
 
 	// Create primary cursor at start of buffer
-	b.AddCursor(Position{Line: 0, Column: 0}, 100)
+	b.AddCursor(NewPosition(0, 0), 100)
 	return b
 }
 
@@ -144,19 +146,20 @@ func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
 	newPos := cursor.pos.Add(lineOffset, columnOffset)
 
 	// Validate line bounds
-	if newPos.Line < 0 || newPos.Line >= len(b.lines) {
+	if newPos.Line() < 0 || newPos.Line() >= len(b.lines) {
 		return ErrInvalidLine
 	}
 
 	// When moving vertically, if target line is shorter than current column,
 	// move cursor to end of the target line
 	if lineOffset != 0 && columnOffset == 0 {
-		if newPos.Column > len(b.lines[newPos.Line]) {
-			newPos.Column = len(b.lines[newPos.Line])
+		if newPos.Column() > len(b.lines[newPos.Line()]) {
+			col := len(b.lines[newPos.Line()])
+			newPos = NewPosition(newPos.Line(), col)
 		}
 	} else {
 		// For horizontal movement, validate column bounds normally
-		if newPos.Column < 0 || newPos.Column > len(b.lines[newPos.Line]) {
+		if newPos.Column() < 0 || newPos.Column() > len(b.lines[newPos.Line()]) {
 			return ErrInvalidOffset
 		}
 	}
@@ -187,15 +190,10 @@ func (b *Buffer) Insert(text string) error {
 		}
 		// Update cursor position
 		if text == "\n" {
-			cursor.SetPosition(Position{
-				Line:   cursor.pos.Line + 1,
-				Column: 0,
-			})
+			cursor.SetPosition(NewPosition(cursor.pos.Line()+1, 0))
 		} else {
-			cursor.SetPosition(Position{
-				Line:   cursor.pos.Line,
-				Column: cursor.pos.Column + len([]rune(text)),
-			})
+			col := cursor.pos.Column() + len([]rune(text))
+			cursor.SetPosition(NewPosition(cursor.pos.Line(), col))
 		}
 	}
 
@@ -203,7 +201,7 @@ func (b *Buffer) Insert(text string) error {
 }
 
 // insertAt inserts text at a specific position (internal method)
-func (b *Buffer) insertAt(pos Position, text string) error {
+func (b *Buffer) insertAt(pos types.Position, text string) error {
 	runes := []rune(text)
 	if len(runes) == 0 {
 		return nil
@@ -211,16 +209,16 @@ func (b *Buffer) insertAt(pos Position, text string) error {
 
 	if text == "\n" {
 		// Handle newline insertion
-		line := b.lines[pos.Line]
-		newLine := append([]rune{}, line[pos.Column:]...)
-		b.lines[pos.Line] = line[:pos.Column]
-		b.lines = append(b.lines[:pos.Line+1], append([][]rune{newLine}, b.lines[pos.Line+1:]...)...)
+		line := b.lines[pos.Line()]
+		newLine := append([]rune{}, line[pos.Column():]...)
+		b.lines[pos.Line()] = line[:pos.Column()]
+		b.lines = append(b.lines[:pos.Line()+1], append([][]rune{newLine}, b.lines[pos.Line()+1:]...)...)
 		return nil
 	}
 
 	// Handle regular text insertion
-	line := b.lines[pos.Line]
-	b.lines[pos.Line] = append(line[:pos.Column], append(runes, line[pos.Column:]...)...)
+	line := b.lines[pos.Line()]
+	b.lines[pos.Line()] = append(line[:pos.Column()], append(runes, line[pos.Column():]...)...)
 	return nil
 }
 
@@ -250,11 +248,11 @@ func (b *Buffer) Delete(count int) error {
 }
 
 // deleteAt deletes characters at a specific position (internal method)
-func (b *Buffer) deleteAt(pos Position, count int) error {
-	line := b.lines[pos.Line]
-	if pos.Column+count <= len(line) {
+func (b *Buffer) deleteAt(pos types.Position, count int) error {
+	line := b.lines[pos.Line()]
+	if pos.Column()+count <= len(line) {
 		// Simple case: deletion within the same line
-		b.lines[pos.Line] = append(line[:pos.Column], line[pos.Column+count:]...)
+		b.lines[pos.Line()] = append(line[:pos.Column()], line[pos.Column()+count:]...)
 		return nil
 	}
 
@@ -308,10 +306,10 @@ func (b *Buffer) LineLen(line int) (int, error) {
 
 // validatePosition checks if a position is valid within the buffer
 func (b *Buffer) validatePosition(pos Position) error {
-	if pos.Line < 0 || pos.Line >= len(b.lines) {
+	if pos.Line() < 0 || pos.Line() >= len(b.lines) {
 		return ErrInvalidLine
 	}
-	if pos.Column < 0 || pos.Column > len(b.lines[pos.Line]) {
+	if pos.Column() < 0 || pos.Column() > len(b.lines[pos.Line()]) {
 		return ErrInvalidOffset
 	}
 	return nil

@@ -12,6 +12,13 @@ type Position struct {
 	column int
 }
 
+func NewPosition(line, column int) Position {
+	return Position{
+		line:   line,
+		column: column,
+	}
+}
+
 // String returns a string representation of the position
 func (p Position) String() string {
 	return fmt.Sprintf("%d:%d", p.line+1, p.column+1)

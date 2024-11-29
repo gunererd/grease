@@ -23,11 +23,11 @@ func NewStatusLine() *StatusLine {
 // Render renders the status line with the given editor state
 func (s *StatusLine) Render(mode string, cursor buffer.Cursor, bufferLineCount int, viewX, viewY int, width int) string {
 	pos := cursor.GetPosition()
-	progress := int(float64(pos.Line+1) / float64(bufferLineCount) * 100)
+	progress := int(float64(pos.Line()+1) / float64(bufferLineCount) * 100)
 
 	// Build the status line components using the styles
 	modeIndicator := s.styles.GetModeStyle(mode).Render(mode)
-	bufferPos := s.styles.GetPositionStyle().Render(fmt.Sprintf("Buf[%d,%d]", pos.Line+1, pos.Column+1))
+	bufferPos := s.styles.GetPositionStyle().Render(fmt.Sprintf("Buf[%d,%d]", pos.Line()+1, pos.Column()+1))
 	viewPos := s.styles.GetPositionStyle().Render(fmt.Sprintf("View[%d,%d]", viewY+1, viewX+1))
 	progressIndicator := s.styles.GetProgressStyle().Render(fmt.Sprintf("%d%%", progress))
 

@@ -1,8 +1,10 @@
 package buffer
 
+import "github.com/gunererd/grease/internal/types"
+
 // Cursor represents a cursor in the buffer
 type Cursor struct {
-	pos      Position
+	pos      types.Position
 	id       int
 	priority int // Higher priority cursors take precedence in overlapping operations
 }
@@ -17,12 +19,12 @@ func NewCursor(pos Position, id, priority int) *Cursor {
 }
 
 // GetPosition returns the current cursor position
-func (c *Cursor) GetPosition() Position {
+func (c *Cursor) GetPosition() types.Position {
 	return c.pos
 }
 
 // SetPosition sets the cursor position
-func (c *Cursor) SetPosition(pos Position) {
+func (c *Cursor) SetPosition(pos types.Position) {
 	c.pos = pos
 }
 

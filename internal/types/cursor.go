@@ -4,7 +4,7 @@ package types
 type Cursor interface {
 	GetPosition() Position
 	SetPosition(pos Position)
-	GetID() int
+	ID() int
 	GetPriority() int
 	SetPriority(priority int)
 }

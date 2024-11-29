@@ -39,13 +39,13 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		h.highlightID = -1
 		e.SetMode(state.NormalMode)
 	case "h":
-		e.Buffer().MoveCursor(cursor.GetID(), 0, -1)
+		e.Buffer().MoveCursor(cursor.ID(), 0, -1)
 	case "l":
-		e.Buffer().MoveCursor(cursor.GetID(), 0, 1)
+		e.Buffer().MoveCursor(cursor.ID(), 0, 1)
 	case "j":
-		e.Buffer().MoveCursor(cursor.GetID(), 1, 0)
+		e.Buffer().MoveCursor(cursor.ID(), 1, 0)
 	case "k":
-		e.Buffer().MoveCursor(cursor.GetID(), -1, 0)
+		e.Buffer().MoveCursor(cursor.ID(), -1, 0)
 	case "i":
 		// Clear highlight when entering insert mode
 		e.HighlightManager().Remove(h.highlightID)
@@ -67,9 +67,10 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 	// Update highlight to match current cursor position
 	if h.highlightID != -1 {
 		currentPos := cursor.GetPosition()
+		var iposition types.Position = currentPos
 		e.HighlightManager().Update(
 			h.highlightID,
-			highlight.CreateVisualHighlight(h.selectionStart, currentPos),
+			highlight.CreateVisualHighlight(h.selectionStart, iposition),
 		)
 	}
 

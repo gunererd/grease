@@ -7,16 +7,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/state"
+	"github.com/gunererd/grease/internal/types"
 )
 
 // Viewport represents a view into a portion of the buffer
 type Viewport struct {
 	width       int
 	height      int
-	offset      buffer.Position // Top-left position of viewport in buffer
-	scrollOff   int             // Number of lines to keep visible above/below cursor
-	cursor      buffer.Position // Current cursor position
-	showCursor  bool            // Controls cursor blinking state
+	offset      types.Position // Top-left position of viewport in buffer
+	scrollOff   int            // Number of lines to keep visible above/below cursor
+	cursor      types.Position // Current cursor position
+	showCursor  bool           // Controls cursor blinking state
 	cursorStyle *buffer.CursorStyle
 	mode        state.Mode
 }
@@ -26,9 +27,9 @@ func NewViewport(width, height int) *Viewport {
 	return &Viewport{
 		width:       width,
 		height:      height,
-		offset:      buffer.Position{},
+		offset:      buffer.NewPosition(0, 0),
 		scrollOff:   5,
-		cursor:      buffer.Position{},
+		cursor:      buffer.NewPosition(0, 0),
 		showCursor:  true,
 		cursorStyle: buffer.NewCursorStyle(),
 		mode:        state.NormalMode,
@@ -47,7 +48,7 @@ func (v *Viewport) GetSize() (width, height int) {
 }
 
 // GetOffset returns the viewport's offset in the buffer
-func (v *Viewport) GetOffset() buffer.Position {
+func (v *Viewport) GetOffset() types.Position {
 	return v.offset
 }
 
@@ -57,30 +58,34 @@ func (v *Viewport) SetScrollOff(lines int) {
 }
 
 // ScrollTo scrolls the viewport to ensure the target position is visible
-func (v *Viewport) ScrollTo(pos buffer.Position) {
+func (v *Viewport) ScrollTo(pos types.Position) {
 	// Vertical scrolling
-	if pos.Line < v.offset.Line+v.scrollOff {
-		v.offset.Line = int(math.Max(0, float64(pos.Line-v.scrollOff)))
-	} else if pos.Line >= v.offset.Line+v.height-v.scrollOff {
-		v.offset.Line = pos.Line - v.height + v.scrollOff + 1
+	if pos.Line() < v.offset.Line()+v.scrollOff {
+		line := int(math.Max(0, float64(pos.Line()-v.scrollOff)))
+		v.offset = buffer.NewPosition(line, v.offset.Column())
+	} else if pos.Line() >= v.offset.Line()+v.height-v.scrollOff {
+		line := pos.Line() - v.height + v.scrollOff + 1
+		v.offset = buffer.NewPosition(line, v.offset.Column())
 	}
 
 	// Horizontal scrolling
-	if pos.Column < v.offset.Column {
-		v.offset.Column = int(math.Max(0, float64(pos.Column)))
-	} else if pos.Column >= v.offset.Column+v.width {
-		v.offset.Column = pos.Column - v.width + 1
+	if pos.Column() < v.offset.Column() {
+		col := int(math.Max(0, float64(pos.Column())))
+		v.offset = buffer.NewPosition(v.offset.Line(), col)
+	} else if pos.Column() >= v.offset.Column()+v.width {
+		col := pos.Column() - v.width + 1
+		v.offset = buffer.NewPosition(v.offset.Line(), col)
 	}
 }
 
 // SetCursor sets the cursor position
-func (v *Viewport) SetCursor(pos buffer.Position) {
+func (v *Viewport) SetCursor(pos types.Position) {
 	v.cursor = pos
 	v.ScrollTo(pos)
 }
 
 // GetCursor returns the current cursor position
-func (v *Viewport) GetCursor() buffer.Position {
+func (v *Viewport) GetCursor() types.Position {
 	return v.cursor
 }
 
@@ -90,21 +95,21 @@ func (v *Viewport) ToggleCursor() {
 }
 
 // IsPositionVisible returns true if the position is within the viewport
-func (v *Viewport) IsPositionVisible(pos buffer.Position) bool {
-	return pos.Line >= v.offset.Line &&
-		pos.Line < v.offset.Line+v.height &&
-		pos.Column >= v.offset.Column &&
-		pos.Column < v.offset.Column+v.width
+func (v *Viewport) IsPositionVisible(pos types.Position) bool {
+	return pos.Line() >= v.offset.Line() &&
+		pos.Line() < v.offset.Line()+v.height &&
+		pos.Column() >= v.offset.Column() &&
+		pos.Column() < v.offset.Column()+v.width
 }
 
 // GetVisibleLines returns the range of visible line numbers
 func (v *Viewport) GetVisibleLines() (start, end int) {
-	return v.offset.Line, v.offset.Line + v.height
+	return v.offset.Line(), v.offset.Line() + v.height
 }
 
 // GetVisibleColumns returns the range of visible column numbers
 func (v *Viewport) GetVisibleColumns() (start, end int) {
-	return v.offset.Column, v.offset.Column + v.width
+	return v.offset.Column(), v.offset.Column() + v.width
 }
 
 // SetMode sets the current editor mode
@@ -148,8 +153,8 @@ func (v *Viewport) renderLine(content string, lineNum int) string {
 	}
 
 	// Add cursor if needed
-	if v.showCursor && v.cursor.Line == lineNum {
-		cursorCol := v.cursor.Column - v.offset.Column
+	if v.showCursor && v.cursor.Line() == lineNum {
+		cursorCol := v.cursor.Column() - v.offset.Column()
 		if cursorCol >= 0 && cursorCol < v.width {
 			// Split the line at cursor position
 			before := visibleContent[:cursorCol]
@@ -213,40 +218,42 @@ func (v *Viewport) View(buf *buffer.Buffer) []string {
 }
 
 // CenterOn centers the viewport on the given position
-func (v *Viewport) CenterOn(pos buffer.Position) {
-	v.offset.Line = int(math.Max(0, float64(pos.Line-v.height/2)))
-	v.offset.Column = int(math.Max(0, float64(pos.Column-v.width/2)))
+func (v *Viewport) CenterOn(pos types.Position) {
+	line := int(math.Max(0, float64(pos.Line()-v.height/2)))
+	column := int(math.Max(0, float64(pos.Column()-v.width/2)))
+	v.offset = buffer.NewPosition(line, column)
 }
 
 // GetRelativePosition converts a buffer position to viewport coordinates
-func (v *Viewport) GetRelativePosition(pos buffer.Position) (x, y int) {
-	return pos.Column - v.offset.Column, pos.Line - v.offset.Line
+func (v *Viewport) GetRelativePosition(pos types.Position) (x, y int) {
+	return pos.Column() - v.offset.Column(), pos.Line() - v.offset.Line()
 }
 
 // GetAbsolutePosition converts viewport coordinates to buffer position
-func (v *Viewport) GetAbsolutePosition(x, y int) buffer.Position {
-	return buffer.Position{
-		Line:   y + v.offset.Line,
-		Column: x + v.offset.Column,
-	}
+func (v *Viewport) GetAbsolutePosition(x, y int) types.Position {
+	return buffer.NewPosition(
+		y+v.offset.Line(),
+		x+v.offset.Column(),
+	)
 }
 
 // ScrollUp scrolls the viewport up by the specified number of lines
 func (v *Viewport) ScrollUp(lines int) {
-	v.offset.Line = int(math.Max(0, float64(v.offset.Line-lines)))
+	line := int(math.Max(0, float64(v.offset.Line()-lines)))
+	v.offset = buffer.NewPosition(line, v.offset.Column())
 }
 
 // ScrollDown scrolls the viewport down by the specified number of lines
 func (v *Viewport) ScrollDown(lines int) {
-	v.offset.Line += lines
+	v.offset = buffer.NewPosition(v.offset.Line()+lines, v.offset.Column())
 }
 
 // ScrollLeft scrolls the viewport left by the specified number of columns
 func (v *Viewport) ScrollLeft(cols int) {
-	v.offset.Column = int(math.Max(0, float64(v.offset.Column-cols)))
+	v.offset = buffer.NewPosition(v.offset.Line(), int(math.Max(0, float64(v.offset.Column()-cols))))
 }
 
 // ScrollRight scrolls the viewport right by the specified number of columns
 func (v *Viewport) ScrollRight(cols int) {
-	v.offset.Column += cols
+	v.offset = buffer.NewPosition(v.offset.Line(), v.offset.Column()+cols)
 }

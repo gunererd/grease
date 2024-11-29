@@ -22,13 +22,13 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 	case "ctrl+c":
 		return e, tea.Quit
 	case "h":
-		e.Buffer().MoveCursor(cursor.GetID(), 0, -1)
+		e.Buffer().MoveCursor(cursor.ID(), 0, -1)
 	case "l":
-		e.Buffer().MoveCursor(cursor.GetID(), 0, 1)
+		e.Buffer().MoveCursor(cursor.ID(), 0, 1)
 	case "j":
-		e.Buffer().MoveCursor(cursor.GetID(), 1, 0)
+		e.Buffer().MoveCursor(cursor.ID(), 1, 0)
 	case "k":
-		e.Buffer().MoveCursor(cursor.GetID(), -1, 0)
+		e.Buffer().MoveCursor(cursor.ID(), -1, 0)
 	case "i":
 		e.SetMode(state.InsertMode)
 	case "v":
