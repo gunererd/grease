@@ -20,7 +20,6 @@ type Editor struct {
 	height           int
 	io               *ioManager.Manager
 	showLineNumbers  bool
-	cursorTimer      time.Time
 	statusLine       types.StatusLine
 	handlers         map[state.Mode]handler.ModeHandler
 	highlightManager types.HighlightManager
@@ -66,11 +65,7 @@ func (e *Editor) HighlightManager() types.HighlightManager {
 }
 
 func (e *Editor) Init() tea.Cmd {
-	// Initialize cursor blink timer
-	e.cursorTimer = time.Now()
-	return tea.Tick(time.Millisecond*530, func(t time.Time) tea.Msg {
-		return CursorBlinkMsg(t)
-	})
+	return nil
 }
 
 type CursorBlinkMsg time.Time
@@ -81,11 +76,6 @@ func (e *Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		e.UpdateViewport(msg.Width, msg.Height)
 	case tea.KeyMsg:
 		return e.handleKeyPress(msg)
-	case CursorBlinkMsg:
-		e.Viewport().ToggleCursor()
-		return e, tea.Tick(time.Millisecond*530, func(t time.Time) tea.Msg {
-			return CursorBlinkMsg(t)
-		})
 	}
 	return e, nil
 }

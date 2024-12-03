@@ -18,7 +18,7 @@ type Viewport struct {
 	offset           types.Position // Top-left position of viewport in buffer
 	scrollOff        int            // Number of lines to keep visible above/below cursor
 	cursor           types.Position // Current cursor position
-	showCursor       bool           // Controls cursor blinking state
+	showCursor       bool
 	cursorStyle      *buffer.CursorStyle
 	mode             state.Mode
 	highlightManager types.HighlightManager
@@ -92,12 +92,9 @@ func (v *Viewport) GetCursor() types.Position {
 	return v.cursor
 }
 
-// ToggleCursor toggles the cursor visibility state for blinking effect
+// ToggleCursor toggles the cursor visibility.
 func (v *Viewport) ToggleCursor() {
-	// Don't toggle cursor in visual mode - keep it always visible
-	if v.mode != state.VisualMode {
-		v.showCursor = !v.showCursor
-	}
+	v.showCursor = true
 }
 
 // IsPositionVisible returns true if the position is within the viewport
