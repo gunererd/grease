@@ -82,7 +82,7 @@ func (e *Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (e *Editor) View() string {
 	// Get visible content from viewport
-	content := e.Viewport().View(e.Buffer())
+	content := e.Viewport().Render(e.Buffer())
 
 	// Add status line
 	statusline := e.getStatusLine()
@@ -94,7 +94,7 @@ func (e *Editor) View() string {
 func (e *Editor) getStatusLine() string {
 	cursor, _ := e.Buffer().GetPrimaryCursor()
 	mode := e.getModeString()
-	x, y := e.Viewport().GetRelativePosition(cursor.GetPosition())
+	x, y := e.Viewport().BufferToViewportPosition(cursor.GetPosition())
 	return e.statusLine.Render(mode, cursor, e.Buffer().LineCount(), x, y, e.Width())
 }
 

@@ -41,380 +41,411 @@ func NewViewport(width, height int) types.Viewport {
 }
 
 // SetSize sets the viewport dimensions
-func (v *Viewport) SetSize(width, height int) {
-	v.width = width
-	v.height = height
+func (vp *Viewport) SetSize(width, height int) {
+	vp.width = width
+	vp.height = height
 }
 
-// GetSize returns the viewport dimensions
-func (v *Viewport) GetSize() (width, height int) {
-	return v.width, v.height
+// Size returns the viewport dimensions
+func (vp *Viewport) Size() (width, height int) {
+	return vp.width, vp.height
 }
 
-// GetOffset returns the viewport's offset in the buffer
-func (v *Viewport) GetOffset() types.Position {
-	return v.offset
+// Offset returns the viewport's offset in the buffer
+func (vp *Viewport) Offset() types.Position {
+	return vp.offset
 }
 
 // SetScrollOff sets the number of lines to keep visible above/below cursor
-func (v *Viewport) SetScrollOff(lines int) {
-	v.scrollOff = lines
+func (vp *Viewport) SetScrollOff(lines int) {
+	vp.scrollOff = lines
 }
 
 // ScrollTo scrolls the viewport to ensure the target position is visible
-func (v *Viewport) ScrollTo(pos types.Position) {
+func (vp *Viewport) ScrollTo(pos types.Position) {
 	// Vertical scrolling
-	if pos.Line() < v.offset.Line()+v.scrollOff {
-		line := int(math.Max(0, float64(pos.Line()-v.scrollOff)))
-		v.offset = buffer.NewPosition(line, v.offset.Column())
-	} else if pos.Line() >= v.offset.Line()+v.height-v.scrollOff {
-		line := pos.Line() - v.height + v.scrollOff + 1
-		v.offset = buffer.NewPosition(line, v.offset.Column())
+	if pos.Line() < vp.offset.Line()+vp.scrollOff {
+		line := int(math.Max(0, float64(pos.Line()-vp.scrollOff)))
+		vp.offset = buffer.NewPosition(line, vp.offset.Column())
+	} else if pos.Line() >= vp.offset.Line()+vp.height-vp.scrollOff {
+		line := pos.Line() - vp.height + vp.scrollOff + 1
+		vp.offset = buffer.NewPosition(line, vp.offset.Column())
 	}
 
 	// Horizontal scrolling
-	if pos.Column() < v.offset.Column() {
+	if pos.Column() < vp.offset.Column() {
 		col := int(math.Max(0, float64(pos.Column())))
-		v.offset = buffer.NewPosition(v.offset.Line(), col)
-	} else if pos.Column() >= v.offset.Column()+v.width {
-		col := pos.Column() - v.width + 1
-		v.offset = buffer.NewPosition(v.offset.Line(), col)
+		vp.offset = buffer.NewPosition(vp.offset.Line(), col)
+	} else if pos.Column() >= vp.offset.Column()+vp.width {
+		col := pos.Column() - vp.width + 1
+		vp.offset = buffer.NewPosition(vp.offset.Line(), col)
 	}
 }
 
 // SetCursor sets the cursor position
-func (v *Viewport) SetCursor(pos types.Position) {
-	v.cursor = pos
-	v.ScrollTo(pos)
+func (vp *Viewport) SetCursor(pos types.Position) {
+	vp.cursor = pos
+	vp.ScrollTo(pos)
 }
 
-// GetCursor returns the current cursor position
-func (v *Viewport) GetCursor() types.Position {
-	return v.cursor
+// Cursor returns the current cursor position
+func (vp *Viewport) Cursor() types.Position {
+	return vp.cursor
 }
 
 // ToggleCursor toggles the cursor visibility.
-func (v *Viewport) ToggleCursor() {
-	v.showCursor = true
+func (vp *Viewport) ToggleCursor() {
+	vp.showCursor = true
 }
 
 // IsPositionVisible returns true if the position is within the viewport
-func (v *Viewport) IsPositionVisible(pos types.Position) bool {
-	return pos.Line() >= v.offset.Line() &&
-		pos.Line() < v.offset.Line()+v.height &&
-		pos.Column() >= v.offset.Column() &&
-		pos.Column() < v.offset.Column()+v.width
+func (vp *Viewport) IsPositionVisible(pos types.Position) bool {
+	isLineVisible := pos.Line() >= vp.offset.Line() && pos.Line() < vp.offset.Line()+vp.height
+	isColumnVisible := pos.Column() >= vp.offset.Column() && pos.Column() < vp.offset.Column()+vp.width
+	return isLineVisible && isColumnVisible
 }
 
-// GetVisibleLines returns the range of visible line numbers
-func (v *Viewport) GetVisibleLines() (start, end int) {
-	return v.offset.Line(), v.offset.Line() + v.height
+// VisibleLines returns the range of visible line numbers
+func (vp *Viewport) VisibleLines() (start, end int) {
+	return vp.offset.Line(), vp.offset.Line() + vp.height
 }
 
-// GetVisibleColumns returns the range of visible column numbers
-func (v *Viewport) GetVisibleColumns() (start, end int) {
-	return v.offset.Column(), v.offset.Column() + v.width
+// VisibleColumns returns the range of visible column numbers
+func (vp *Viewport) VisibleColumns() (start, end int) {
+	return vp.offset.Column(), vp.offset.Column() + vp.width
 }
 
 // SetMode sets the current editor mode
-func (v *Viewport) SetMode(mode state.Mode) {
-	v.mode = mode
+func (vp *Viewport) SetMode(mode state.Mode) {
+	vp.mode = mode
 	// Disable cursor blinking in visual mode since we show selection
 	if mode == state.VisualMode {
-		v.showCursor = true // Keep cursor always visible in visual mode
+		vp.showCursor = true // Keep cursor always visible in visual mode
 	}
 }
 
 // SetHighlightManager sets the highlight manager for the viewport
-func (v *Viewport) SetHighlightManager(hm types.HighlightManager) {
-	v.highlightManager = hm
+func (vp *Viewport) SetHighlightManager(hm types.HighlightManager) {
+	vp.highlightManager = hm
 }
 
-// styledRange represents a range of text with a specific style
-type styledRange struct {
+// StyleRange represents a range of text with a specific style
+type StyleRange struct {
 	start, end int
 	style      lipgloss.Style
 }
 
-// renderLine processes and formats a single line of content
-func (v *Viewport) renderLine(content string, lineNum int) string {
-	// Create base content
-	visibleContent := content
+// ViewportCursor represents a cursor position and its visual style in the viewport
+type ViewportCursor struct {
+	position int
+	style    lipgloss.Style
+}
+
+// prepareVisibleContent handles content preparation and padding
+func (vp *Viewport) prepareVisibleContent(content string) string {
 	if content == "" {
-		visibleContent = strings.Repeat(" ", v.width)
-	} else {
-		// Calculate visible portion of the line
-		start, end := v.GetVisibleColumns()
-		if start >= len(content) {
-			visibleContent = strings.Repeat(" ", v.width)
+		return strings.Repeat(" ", vp.width)
+	}
+
+	// Calculate visible portion of the line
+	startCol, endCol := vp.VisibleColumns()
+	if startCol >= len(content) {
+		return strings.Repeat(" ", vp.width)
+	}
+
+	// Ensure we don't go past the end of the content
+	if endCol > len(content) {
+		endCol = len(content)
+	}
+
+	// Get visible portion of the line
+	visibleContent := content
+	if startCol < len(content) {
+		if endCol <= len(content) {
+			visibleContent = content[startCol:endCol]
 		} else {
-			// Ensure we don't go past the end of the content
-			if end > len(content) {
-				end = len(content)
-			}
-
-			// Get visible portion of the line
-			if start < len(content) {
-				if end <= len(content) {
-					visibleContent = content[start:end]
-				} else {
-					visibleContent = content[start:]
-				}
-			}
-
-			// Pad to viewport width
-			if len(visibleContent) < v.width {
-				visibleContent += strings.Repeat(" ", v.width-len(visibleContent))
-			} else if len(visibleContent) > v.width {
-				visibleContent = visibleContent[:v.width]
-			}
+			visibleContent = content[startCol:]
 		}
 	}
 
-	// Get all styled ranges for this line
-	ranges := make([]styledRange, 0, 8) // Pre-allocate for common case
+	// Pad to viewport width
+	if len(visibleContent) < vp.width {
+		visibleContent += strings.Repeat(" ", vp.width-len(visibleContent))
+	} else if len(visibleContent) > vp.width {
+		visibleContent = visibleContent[:vp.width]
+	}
 
-	// Add cursor style if on this line
-	currentCol := v.offset.Column()
-	cursorCol := v.cursor.Column() - currentCol
-	if v.showCursor && v.cursor.Line() == lineNum && cursorCol >= 0 && cursorCol < len(visibleContent) {
-		var cursorStyle lipgloss.Style
-		switch v.mode {
-		case state.InsertMode:
-			cursorStyle = v.cursorStyle.GetInsertStyle()
-		case state.CommandMode:
-			cursorStyle = v.cursorStyle.GetCommandStyle()
-		case state.VisualMode:
-			cursorStyle = v.cursorStyle.GetVisualStyle()
-		default:
-			cursorStyle = v.cursorStyle.GetNormalStyle()
+	return visibleContent
+}
+
+// getCursorStyle returns the appropriate cursor style for current mode
+func (vp *Viewport) getCursorStyle() lipgloss.Style {
+	switch vp.mode {
+	case state.InsertMode:
+		return vp.cursorStyle.GetInsertStyle()
+	case state.CommandMode:
+		return vp.cursorStyle.GetCommandStyle()
+	case state.VisualMode:
+		return vp.cursorStyle.GetVisualStyle()
+	default:
+		return vp.cursorStyle.GetNormalStyle()
+	}
+}
+
+// getHighlightBounds calculates viewport-relative bounds for a highlight
+func (vp *Viewport) getHighlightBounds(h types.Highlight, lineNumber, viewportOffset, contentLength int) (start, end int) {
+	startPos := h.GetStartPosition()
+	endPos := h.GetEndPosition()
+
+	// Ensure start position is before end position
+	if endPos.Line() < startPos.Line() || (endPos.Line() == startPos.Line() && endPos.Column() < startPos.Column()) {
+		startPos, endPos = endPos, startPos
+	}
+
+	// Calculate bounds
+	start = 0
+	end = contentLength
+
+	if lineNumber == startPos.Line() {
+		start = startPos.Column() - viewportOffset
+	}
+	if lineNumber == endPos.Line() {
+		end = endPos.Column() - viewportOffset + 1
+	}
+
+	// Skip if completely outside visible area
+	if end <= 0 || start >= contentLength {
+		return 0, 0
+	}
+
+	// Clip to visible area
+	if start < 0 {
+		start = 0
+	}
+	if end > contentLength {
+		end = contentLength
+	}
+
+	return start, end
+}
+
+// getHighlightRanges returns styled ranges for highlights in a line
+func (vp *Viewport) getHighlightRanges(lineNumber, viewportOffset, contentLength int) []StyleRange {
+	if vp.highlightManager == nil {
+		return nil
+	}
+
+	highlights := vp.highlightManager.GetForLine(lineNumber)
+	if len(highlights) == 0 {
+		return nil
+	}
+
+	ranges := make([]StyleRange, 0, len(highlights))
+	style := highlight.NewStyle()
+
+	for _, h := range highlights {
+		start, end := vp.getHighlightBounds(h, lineNumber, viewportOffset, contentLength)
+		if start >= end {
+			continue
 		}
-		ranges = append(ranges, styledRange{
-			start: cursorCol,
-			end:   cursorCol + 1,
-			style: cursorStyle,
+		ranges = append(ranges, StyleRange{
+			start: start,
+			end:   end,
+			style: style.GetStyle(h.GetType()),
 		})
 	}
+	return ranges
+}
 
-	// Add highlight styles
-	if v.highlightManager != nil {
-		highlights := v.highlightManager.GetForLine(lineNum)
-		if len(highlights) > 0 {
-			style := highlight.NewStyle()
-			for _, h := range highlights {
-				start := h.GetStartPosition()
-				end := h.GetEndPosition()
+// collectStyleRanges gathers cursor and highlight ranges for a line
+func (vp *Viewport) collectStyleRanges(lineNumber int, contentLength int) ([]StyleRange, *ViewportCursor) {
+	ranges := []StyleRange{}
+	viewportOffset := vp.offset.Column()
+	cursorCol := vp.cursor.Column() - viewportOffset
 
-				// Ensure start position is before end position
-				if end.Line() < start.Line() || (end.Line() == start.Line() && end.Column() < start.Column()) {
-					start, end = end, start
-				}
+	// Get highlight styles
+	if highlights := vp.getHighlightRanges(lineNumber, viewportOffset, contentLength); len(highlights) > 0 {
+		ranges = append(ranges, highlights...)
+	}
 
-				// Convert buffer positions to viewport-relative positions
-				startCol := 0
-				endCol := len(visibleContent)
-
-				// If this is the start line, start from the start column
-				if lineNum == start.Line() {
-					startCol = start.Column() - currentCol
-				}
-
-				// If this is the end line, end at the end column
-				if lineNum == end.Line() {
-					endCol = end.Column() - currentCol + 1
-				}
-
-				// Skip if completely outside visible area
-				if endCol <= 0 || startCol >= len(visibleContent) {
-					continue
-				}
-
-				// Clip to visible area
-				if startCol < 0 {
-					startCol = 0
-				}
-				if endCol > len(content) {
-					endCol = len(content)
-				}
-
-				// Skip invalid ranges
-				if startCol >= endCol {
-					continue
-				}
-
-				ranges = append(ranges, styledRange{
-					start: startCol,
-					end:   endCol,
-					style: style.GetStyle(h.GetType()),
-				})
-			}
+	// Add cursor style if on this line
+	var cursor *ViewportCursor
+	if vp.showCursor && vp.cursor.Line() == lineNumber && cursorCol >= 0 && cursorCol < contentLength {
+		cursor = &ViewportCursor{
+			position: cursorCol,
+			style:    vp.getCursorStyle(),
 		}
 	}
 
-	// If no styles to apply, return as is
+	return ranges, cursor
+}
+
+// mergeHighlightRanges handles merging overlapping highlights
+func (vp *Viewport) mergeHighlightRanges(ranges []StyleRange) []StyleRange {
 	if len(ranges) == 0 {
-		return visibleContent
-	}
-
-	// Separate cursor and highlight ranges
-	var cursorRange *styledRange
-	highlightRanges := make([]styledRange, 0, len(ranges))
-
-	for _, r := range ranges {
-		if r.start == cursorCol && r.end == cursorCol+1 {
-			cursorRange = &r
-		} else {
-			highlightRanges = append(highlightRanges, r)
-		}
+		return nil
 	}
 
 	// Sort highlight ranges by start position
-	sort.Slice(highlightRanges, func(i, j int) bool {
-		return highlightRanges[i].start < highlightRanges[j].start
+	sort.Slice(ranges, func(i, j int) bool {
+		return ranges[i].start < ranges[j].start
 	})
 
-	// Merge overlapping highlight ranges
-	merged := make([]styledRange, 0, len(highlightRanges))
-	if len(highlightRanges) > 0 {
-		current := highlightRanges[0]
-		for i := 1; i < len(highlightRanges); i++ {
-			if highlightRanges[i].start <= current.end {
-				if highlightRanges[i].end > current.end {
-					current.end = highlightRanges[i].end
-				}
-			} else {
-				merged = append(merged, current)
-				current = highlightRanges[i]
+	// Merge overlapping ranges
+	merged := make([]StyleRange, 0, len(ranges))
+	current := ranges[0]
+	for i := 1; i < len(ranges); i++ {
+		if ranges[i].start <= current.end {
+			if ranges[i].end > current.end {
+				current.end = ranges[i].end
 			}
+		} else {
+			merged = append(merged, current)
+			current = ranges[i]
 		}
-		merged = append(merged, current)
 	}
+	merged = append(merged, current)
 
-	// Apply styles efficiently
+	return merged
+}
+
+// applyStyles handles the actual style application
+func (vp *Viewport) applyStyles(lineContent string, highlightRanges []StyleRange, cursor *ViewportCursor) string {
 	var result strings.Builder
-	result.Grow(len(visibleContent) * 2)
+	result.Grow(len(lineContent) * 2)
 
 	lastPos := 0
-	for _, r := range merged {
+	for _, r := range highlightRanges {
 		// Ensure valid bounds
 		if r.start < 0 {
 			r.start = 0
 		}
-		if r.end > len(visibleContent) {
-			r.end = len(visibleContent)
+		if r.end > len(lineContent) {
+			r.end = len(lineContent)
 		}
-		if r.start >= r.end || r.start >= len(visibleContent) {
+		if r.start >= r.end || r.start >= len(lineContent) {
 			continue
 		}
 
 		// Add unstyled text before this range
 		if r.start > lastPos {
-			result.WriteString(visibleContent[lastPos:r.start])
+			result.WriteString(lineContent[lastPos:r.start])
 		}
 
 		// If cursor is in this range, split the styling
-		if cursorRange != nil && cursorRange.start >= r.start && cursorRange.start < r.end {
+		if cursor != nil && cursor.position >= r.start && cursor.position < r.end {
 			// Write highlighted text before cursor
-			if cursorRange.start > r.start {
-				result.WriteString(r.style.Render(visibleContent[r.start:cursorRange.start]))
+			if cursor.position > r.start {
+				result.WriteString(r.style.Render(lineContent[r.start:cursor.position]))
 			}
 			// Write cursor
-			result.WriteString(cursorRange.style.Render(visibleContent[cursorRange.start:cursorRange.end]))
+			result.WriteString(cursor.style.Render(string(lineContent[cursor.position])))
 			// Write highlighted text after cursor
-			if cursorRange.end < r.end {
-				result.WriteString(r.style.Render(visibleContent[cursorRange.end:r.end]))
+			if cursor.position+1 < r.end {
+				result.WriteString(r.style.Render(lineContent[cursor.position+1:r.end]))
 			}
 		} else {
 			// Add styled text without cursor
-			result.WriteString(r.style.Render(visibleContent[r.start:r.end]))
+			result.WriteString(r.style.Render(lineContent[r.start:r.end]))
 		}
 		lastPos = r.end
 	}
 
 	// Handle cursor if it's after all highlights
-	if cursorRange != nil && (len(merged) == 0 || cursorRange.start >= lastPos) {
+	if cursor != nil && (len(highlightRanges) == 0 || cursor.position >= lastPos) {
 		// Add any unstyled text before cursor
-		if cursorRange.start > lastPos {
-			result.WriteString(visibleContent[lastPos:cursorRange.start])
+		if cursor.position > lastPos {
+			result.WriteString(lineContent[lastPos:cursor.position])
 		}
 		// Add cursor
-		result.WriteString(cursorRange.style.Render(visibleContent[cursorRange.start:cursorRange.end]))
-		lastPos = cursorRange.end
+		result.WriteString(cursor.style.Render(string(lineContent[cursor.position])))
+		lastPos = cursor.position + 1
 	}
 
 	// Add remaining unstyled text
-	if lastPos < len(visibleContent) {
-		result.WriteString(visibleContent[lastPos:])
+	if lastPos < len(lineContent) {
+		result.WriteString(lineContent[lastPos:])
 	}
 
 	return result.String()
 }
 
-// createEmptyLine creates an empty line with proper formatting
-func (v *Viewport) createEmptyLine() string {
-	return strings.Repeat(" ", v.width)
+// renderLine processes and formats a single line of content
+func (vp *Viewport) renderLine(content string, lineNumber int) string {
+	visibleContent := vp.prepareVisibleContent(content)
+	highlightRanges, cursor := vp.collectStyleRanges(lineNumber, len(visibleContent))
+
+	if len(highlightRanges) == 0 && cursor == nil {
+		return visibleContent
+	}
+
+	mergedHighlights := vp.mergeHighlightRanges(highlightRanges)
+	return vp.applyStyles(visibleContent, mergedHighlights, cursor)
 }
 
-// View returns the visible portion of the buffer content
-func (v *Viewport) View(buf types.Buffer) []string {
-	start, end := v.GetVisibleLines()
-	result := make([]string, 0, v.height)
+// createEmptyLine creates an empty line with proper formatting
+func (vp *Viewport) createEmptyLine() string {
+	return strings.Repeat(" ", vp.width)
+}
+
+// Render returns the visible portion of the buffer content
+func (vp *Viewport) Render(buf types.Buffer) []string {
+	startLine, endLine := vp.VisibleLines()
+	renderedLines := make([]string, 0, vp.height)
 
 	// Render visible lines
-	for line := start; line < end && line < buf.LineCount(); line++ {
+	for line := startLine; line < endLine && line < buf.LineCount(); line++ {
 		content, err := buf.GetLine(line)
 		if err != nil {
 			continue
 		}
-		result = append(result, v.renderLine(content, line))
+		renderedLines = append(renderedLines, vp.renderLine(content, line))
 	}
 
 	// Fill remaining space with empty lines
-	emptyLine := v.createEmptyLine()
-	for len(result) < v.height {
-		result = append(result, emptyLine)
+	emptyLine := vp.createEmptyLine()
+	for len(renderedLines) < vp.height {
+		renderedLines = append(renderedLines, emptyLine)
 	}
 
-	return result
+	return renderedLines
 }
 
 // CenterOn centers the viewport on the given position
-func (v *Viewport) CenterOn(pos types.Position) {
-	line := int(math.Max(0, float64(pos.Line()-v.height/2)))
-	column := int(math.Max(0, float64(pos.Column()-v.width/2)))
-	v.offset = buffer.NewPosition(line, column)
+func (vp *Viewport) CenterOn(pos types.Position) {
+	line := int(math.Max(0, float64(pos.Line()-vp.height/2)))
+	column := int(math.Max(0, float64(pos.Column()-vp.width/2)))
+	vp.offset = buffer.NewPosition(line, column)
 }
 
-// GetRelativePosition converts a buffer position to viewport coordinates
-func (v *Viewport) GetRelativePosition(pos types.Position) (x, y int) {
-	return pos.Column() - v.offset.Column(), pos.Line() - v.offset.Line()
+func (vp *Viewport) BufferToViewportPosition(pos types.Position) (x, y int) {
+	return pos.Column() - vp.offset.Column(), pos.Line() - vp.offset.Line()
 }
 
-// GetAbsolutePosition converts viewport coordinates to buffer position
-func (v *Viewport) GetAbsolutePosition(x, y int) types.Position {
+func (vp *Viewport) ViewportToBufferPosition(x, y int) types.Position {
 	return buffer.NewPosition(
-		y+v.offset.Line(),
-		x+v.offset.Column(),
+		y+vp.offset.Line(),
+		x+vp.offset.Column(),
 	)
 }
 
 // ScrollUp scrolls the viewport up by the specified number of lines
-func (v *Viewport) ScrollUp(lines int) {
-	line := int(math.Max(0, float64(v.offset.Line()-lines)))
-	v.offset = buffer.NewPosition(line, v.offset.Column())
+func (vp *Viewport) ScrollUp(lines int) {
+	line := int(math.Max(0, float64(vp.offset.Line()-lines)))
+	vp.offset = buffer.NewPosition(line, vp.offset.Column())
 }
 
 // ScrollDown scrolls the viewport down by the specified number of lines
-func (v *Viewport) ScrollDown(lines int) {
-	v.offset = buffer.NewPosition(v.offset.Line()+lines, v.offset.Column())
+func (vp *Viewport) ScrollDown(lines int) {
+	vp.offset = buffer.NewPosition(vp.offset.Line()+lines, vp.offset.Column())
 }
 
 // ScrollLeft scrolls the viewport left by the specified number of columns
-func (v *Viewport) ScrollLeft(cols int) {
-	v.offset = buffer.NewPosition(v.offset.Line(), int(math.Max(0, float64(v.offset.Column()-cols))))
+func (vp *Viewport) ScrollLeft(cols int) {
+	vp.offset = buffer.NewPosition(vp.offset.Line(), int(math.Max(0, float64(vp.offset.Column()-cols))))
 }
 
 // ScrollRight scrolls the viewport right by the specified number of columns
-func (v *Viewport) ScrollRight(cols int) {
-	v.offset = buffer.NewPosition(v.offset.Line(), v.offset.Column()+cols)
+func (vp *Viewport) ScrollRight(cols int) {
+	vp.offset = buffer.NewPosition(vp.offset.Line(), vp.offset.Column()+cols)
 }

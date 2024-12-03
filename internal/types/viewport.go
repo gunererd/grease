@@ -6,21 +6,21 @@ import (
 
 type Viewport interface {
 	SetSize(width, height int)
-	GetSize() (width, height int)
-	GetOffset() Position
+	Size() (width, height int)
+	Offset() Position
 	SetScrollOff(lines int)
 	ScrollTo(pos Position)
 	SetCursor(pos Position)
-	GetCursor() Position
+	Cursor() Position
 	ToggleCursor()
 	IsPositionVisible(pos Position) bool
-	GetVisibleLines() (start, end int)
-	GetVisibleColumns() (start, end int)
+	VisibleLines() (start, end int)
+	VisibleColumns() (start, end int)
 	SetMode(mode state.Mode)
-	View(buf Buffer) []string
+	Render(buf Buffer) []string
 	CenterOn(pos Position)
-	GetRelativePosition(pos Position) (x, y int)
-	GetAbsolutePosition(x, y int) Position
+	BufferToViewportPosition(pos Position) (x, y int)
+	ViewportToBufferPosition(x, y int) Position
 	ScrollUp(lines int)
 	ScrollDown(lines int)
 	ScrollLeft(cols int)
