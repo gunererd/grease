@@ -30,3 +30,10 @@ func (s *CursorStyle) GetCommandStyle() lipgloss.Style {
 		Background(lipgloss.Color("5")). // Magenta background
 		Foreground(lipgloss.Color("0"))  // Black text
 }
+
+// GetVisualStyle returns the cursor style for visual mode
+func (s *CursorStyle) GetVisualStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Background(lipgloss.Color("7")). // Gray background
+		Foreground(lipgloss.Color("0"))  // Black text
+}
