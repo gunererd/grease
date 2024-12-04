@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/editor/handler"
 	ioManager "github.com/gunererd/grease/internal/io"
+	"github.com/gunererd/grease/internal/keytree"
 	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
@@ -25,7 +26,14 @@ type Editor struct {
 	highlightManager types.HighlightManager
 }
 
-func New(io *ioManager.Manager, b types.Buffer, sl types.StatusLine, wp types.Viewport, hm types.HighlightManager) *Editor {
+func New(
+	io *ioManager.Manager,
+	b types.Buffer,
+	sl types.StatusLine,
+	wp types.Viewport,
+	hm types.HighlightManager,
+	kt *keytree.KeyTree,
+) *Editor {
 	e := &Editor{
 		buffer:          b,
 		viewport:        wp, // Default size
@@ -34,9 +42,9 @@ func New(io *ioManager.Manager, b types.Buffer, sl types.StatusLine, wp types.Vi
 		showLineNumbers: true,
 		statusLine:      sl,
 		handlers: map[state.Mode]handler.ModeHandler{
-			state.NormalMode:  handler.NewNormalMode(),
+			state.NormalMode:  handler.NewNormalMode(kt),
 			state.InsertMode:  handler.NewInsertMode(),
-			state.VisualMode:  handler.NewVisualMode(),
+			state.VisualMode:  handler.NewVisualMode(kt),
 			state.CommandMode: handler.NewCommandMode(),
 		},
 		highlightManager: hm,

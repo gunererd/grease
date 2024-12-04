@@ -1,7 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,17 +13,35 @@ import (
 	"github.com/gunererd/grease/internal/editor"
 	"github.com/gunererd/grease/internal/highlight"
 	ioManager "github.com/gunererd/grease/internal/io"
+	"github.com/gunererd/grease/internal/keytree"
 	"github.com/gunererd/grease/internal/ui"
 )
 
 func main() {
+
+	f, err := tea.LogToFile("debug.log", "DEBUG")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	profile := flag.Bool("profile", false, "Enable pprof profiling on :6060")
+	flag.Parse()
+	if *profile {
+		go func() {
+			log.Println("Starting pprof server on :6060")
+			http.ListenAndServe(":6060", nil)
+		}()
+	}
+
+	kt := keytree.NewKeyTree()
 	manager := ioManager.NewManager(ioManager.NewStdinSource(), ioManager.NewStdoutSink())
 	highlightManager := highlight.NewManager()
 	buffer := buffer.New()
 	statusLine := ui.NewStatusLine()
 	viewport := ui.NewViewport(0, 0)
 	viewport.SetHighlightManager(highlightManager)
-	m := editor.New(manager, buffer, statusLine, viewport, highlightManager)
+	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt)
 
 	// Load content from stdin if it's not a terminal
 	stat, _ := os.Stdin.Stat()

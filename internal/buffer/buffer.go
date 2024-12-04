@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"log"
 	"sort"
 	"sync"
 	"unicode/utf8"
@@ -133,8 +134,7 @@ func (b *Buffer) GetPrimaryCursor() (types.Cursor, error) {
 	return b.cursors[0], nil
 }
 
-// MoveCursor moves a cursor by the given offsets
-func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
+func (b *Buffer) MoveCursorRelative(cursorID int, lineOffset, columnOffset int) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -147,6 +147,42 @@ func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
 
 	// Validate line bounds
 	if newPos.Line() < 0 || newPos.Line() >= len(b.lines) {
+		log.Println("Invalid line:", newPos.Line())
+		return ErrInvalidLine
+	}
+
+	// When moving vertically, if target line is shorter than current column,
+	// move cursor to end of the target line
+	if lineOffset != 0 && columnOffset == 0 {
+		if newPos.Column() > len(b.lines[newPos.Line()]) {
+			col := len(b.lines[newPos.Line()])
+			newPos = NewPosition(newPos.Line(), col)
+		}
+	} else {
+		// For horizontal movement, validate column bounds normally
+		if newPos.Column() < 0 || newPos.Column() > len(b.lines[newPos.Line()]) {
+			return ErrInvalidOffset
+		}
+	}
+
+	cursor.SetPosition(newPos)
+	return nil
+}
+
+func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	cursor := b.findCursor(cursorID)
+	if cursor == nil {
+		return ErrNoCursor
+	}
+
+	newPos := NewPosition(lineOffset, columnOffset)
+
+	// Validate line bounds
+	if newPos.Line() < 0 || newPos.Line() >= len(b.lines) {
+		log.Println("Invalid line:", newPos.Line())
 		return ErrInvalidLine
 	}
 

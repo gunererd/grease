@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/highlight"
+	"github.com/gunererd/grease/internal/keytree"
 	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
@@ -14,7 +15,7 @@ type VisualMode struct {
 	highlightID    int
 }
 
-func NewVisualMode() *VisualMode {
+func NewVisualMode(kt *keytree.KeyTree) *VisualMode {
 	return &VisualMode{
 		highlightID: -1, // Invalid highlight ID
 	}
@@ -46,16 +47,16 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		}
 		e.SetMode(state.NormalMode)
 	case "h":
-		e.Buffer().MoveCursor(cursor.ID(), 0, -1)
+		e.Buffer().MoveCursorRelative(cursor.ID(), 0, -1)
 		e.HandleCursorMovement()
 	case "l":
-		e.Buffer().MoveCursor(cursor.ID(), 0, 1)
+		e.Buffer().MoveCursorRelative(cursor.ID(), 0, 1)
 		e.HandleCursorMovement()
 	case "j":
-		e.Buffer().MoveCursor(cursor.ID(), 1, 0)
+		e.Buffer().MoveCursorRelative(cursor.ID(), 1, 0)
 		e.HandleCursorMovement()
 	case "k":
-		e.Buffer().MoveCursor(cursor.ID(), -1, 0)
+		e.Buffer().MoveCursorRelative(cursor.ID(), -1, 0)
 		e.HandleCursorMovement()
 	case "i":
 		// Clear highlight when entering insert mode

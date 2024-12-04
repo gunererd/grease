@@ -55,3 +55,10 @@ func (p Position) Add(line, col int) types.Position {
 		column: p.column + col,
 	}
 }
+
+func (p Position) Set(line, col int) types.Position {
+	return Position{
+		line:   line,
+		column: col,
+	}
+}

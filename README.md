@@ -1,6 +1,6 @@
 ## Todo
 ### Editor:
-    [ ] Add basic word motions like: w, W, e, E
+    [x] Add basic word motions like: w, W, e, E
     [ ] Add basic line motions like: $, ^, gg, G
     [ ] Add commands: delete, change, yank
     [ ] Add history: undo, redo
