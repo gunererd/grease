@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"log"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
 
@@ -40,7 +43,7 @@ func NewChangeOperation() *ChangeOperation {
 
 func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
 	model, cmd := c.DeleteOperation.Execute(e, from, to)
-	// TODO: Add command to switch to insert mode
+	e.SetMode(state.InsertMode)
 	return model, cmd
 }
 
@@ -74,5 +77,6 @@ func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (tea.Mo
 		}
 		y.register = yankedText
 	}
+	log.Println("Yanked text:", y.register)
 	return e, nil
 }
