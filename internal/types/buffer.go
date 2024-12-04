@@ -23,4 +23,5 @@ type Buffer interface {
 
 	Insert(text string) error
 	Delete(count int) error
+	ReplaceLine(line int, content string) error
 }

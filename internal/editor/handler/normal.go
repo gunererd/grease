@@ -25,42 +25,26 @@ func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
 
 	// Word motion commands - change
 	kt.Add([]string{"c", "w"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordStart, false, true),
+		Execute: CreateWordMotionCommand(false, NewChangeOperation()),
 	})
 	kt.Add([]string{"c", "W"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordStart, true, true),
-	})
-	kt.Add([]string{"c", "e"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordEnd, false, true),
-	})
-	kt.Add([]string{"c", "E"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordEnd, true, true),
-	})
-	kt.Add([]string{"c", "b"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(prevWordStart, false, true),
-	})
-	kt.Add([]string{"c", "B"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(prevWordStart, true, true),
+		Execute: CreateWordMotionCommand(true, NewChangeOperation()),
 	})
 
 	// Word motion commands - delete
 	kt.Add([]string{"d", "w"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordStart, false, false),
+		Execute: CreateWordMotionCommand(false, NewDeleteOperation()),
 	})
 	kt.Add([]string{"d", "W"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordStart, true, false),
+		Execute: CreateWordMotionCommand(true, NewDeleteOperation()),
 	})
-	kt.Add([]string{"d", "e"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordEnd, false, false),
+
+	// Word motion commands - movement only
+	kt.Add([]string{"w"}, keytree.KeyAction{
+		Execute: CreateWordMotionCommand(false, nil),
 	})
-	kt.Add([]string{"d", "E"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(nextWordEnd, true, false),
-	})
-	kt.Add([]string{"d", "b"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(prevWordStart, false, false),
-	})
-	kt.Add([]string{"d", "B"}, keytree.KeyAction{
-		Execute: createWordMotionCommand(prevWordStart, true, false),
+	kt.Add([]string{"W"}, keytree.KeyAction{
+		Execute: CreateWordMotionCommand(true, nil),
 	})
 
 	return &NormalMode{
@@ -72,6 +56,7 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 
 	// Handle key sequences
 	if handled, model, cmd := h.keytree.Handle(msg.String(), e); handled {
+		e.HandleCursorMovement()
 		return model, cmd
 	}
 

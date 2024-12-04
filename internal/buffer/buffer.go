@@ -500,6 +500,19 @@ func (b *Buffer) PrevWordPosition(pos types.Position, bigWord bool) types.Positi
 	return NewPosition(0, 0)
 }
 
+// ReplaceLine replaces the content of a specific line
+func (b *Buffer) ReplaceLine(line int, content string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if line < 0 || line >= len(b.lines) {
+		return ErrInvalidLine
+	}
+
+	b.lines[line] = []rune(content)
+	return nil
+}
+
 // validatePosition checks if a position is valid within the buffer
 func (b *Buffer) validatePosition(pos types.Position) error {
 	if pos.Line() < 0 || pos.Line() >= len(b.lines) {

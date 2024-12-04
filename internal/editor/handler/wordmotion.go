@@ -5,29 +5,25 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/buffer"
-	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
 
 var (
-	// Matches any Unicode whitespace
 	whitespaceRegex = regexp.MustCompile(`^[\s]$`)
-	// Matches word characters (letters, digits, underscore)
-	wordCharRegex = regexp.MustCompile(`^[\p{L}\p{N}_]$`)
+	wordCharRegex   = regexp.MustCompile(`^[\p{L}\p{N}_]$`)
 )
 
-type wordMotionType int
+// Motion defines how to calculate target position from current position
+type Motion interface {
+	Calculate(buf types.Buffer, pos types.Position) types.Position
+}
 
-const (
-	nextWordStart wordMotionType = iota
-	nextWordEnd
-	prevWordStart
-)
+type WordMotion struct {
+	bigWord bool
+}
 
-type wordMotionCommand struct {
-	motionType wordMotionType
-	bigWord    bool
-	changeMode bool
+func NewWordMotion(bigWord bool) *WordMotion {
+	return &WordMotion{bigWord: bigWord}
 }
 
 func isWordChar(r rune) bool {
@@ -48,41 +44,22 @@ func getCharType(r rune) int {
 	return 2 // punctuation/symbol
 }
 
-// getTargetPosition calculates where the motion should end
-func (wmc *wordMotionCommand) getTargetPosition(buf types.Buffer, curPos types.Position) types.Position {
-	switch wmc.motionType {
-	case nextWordStart:
-		return wmc.getNextWordStartTarget(buf, curPos)
-	case nextWordEnd:
-		return buf.NextWordEndPosition(curPos, wmc.bigWord)
-	case prevWordStart:
-		return buf.PrevWordPosition(curPos, wmc.bigWord)
-	}
-	return curPos
-}
-
-// getNextWordStartTarget handles the complex logic for 'w' and 'W' motions
-func (wmc *wordMotionCommand) getNextWordStartTarget(buf types.Buffer, curPos types.Position) types.Position {
-	line, _ := buf.GetLine(curPos.Line())
+func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
+	line, _ := buf.GetLine(pos.Line())
 	runes := []rune(line)
-	col := curPos.Column()
+	col := pos.Column()
 
+	// If we're at the end of the current line, try to move to the next line
 	if col >= len(runes) {
-		return curPos
+		nextLine := pos.Line() + 1
+		if nextLine < buf.LineCount() {
+			return buffer.NewPosition(nextLine, 0)
+		}
+		return pos
 	}
 
-	if wmc.bigWord {
+	if wm.bigWord {
 		// For 'W', move to next non-whitespace after whitespace
-		if wmc.changeMode {
-			// For 'cW', find first whitespace
-			for i := col; i < len(runes); i++ {
-				if isWhitespace(runes[i]) {
-					return buffer.NewPosition(curPos.Line(), i)
-				}
-			}
-			return buffer.NewPosition(curPos.Line(), len(runes))
-		}
-
 		// Skip non-whitespace
 		for col < len(runes) && !isWhitespace(runes[col]) {
 			col++
@@ -93,73 +70,62 @@ func (wmc *wordMotionCommand) getNextWordStartTarget(buf types.Buffer, curPos ty
 		}
 	} else {
 		// For 'w', handle word characters and punctuation separately
-		startType := getCharType(runes[col])
-		col++
-
-		// Skip characters of the same type
-		for col < len(runes) {
-			currentType := getCharType(runes[col])
-			if currentType != startType || isWhitespace(runes[col]) {
-				break
+		if col < len(runes) {
+			startType := getCharType(runes[col])
+			col++
+			// Skip characters of the same type
+			for col < len(runes) && getCharType(runes[col]) == startType {
+				col++
 			}
-			col++
-		}
-
-		// Skip whitespace
-		for col < len(runes) && isWhitespace(runes[col]) {
-			col++
+			// Skip any whitespace
+			for col < len(runes) && isWhitespace(runes[col]) {
+				col++
+			}
 		}
 	}
 
+	// If we reached the end of line, move to the start of next line
 	if col >= len(runes) {
-		col = len(runes)
-	}
-
-	return buffer.NewPosition(curPos.Line(), col)
-}
-
-// deleteText handles the text deletion logic
-func (wmc *wordMotionCommand) deleteText(buf types.Buffer, curPos, targetPos types.Position) {
-	if targetPos.Line() == curPos.Line() {
-		var charsToDelete int
-		if wmc.motionType == prevWordStart {
-			charsToDelete = curPos.Column() - targetPos.Column()
-		} else {
-			charsToDelete = targetPos.Column() - curPos.Column()
-			if wmc.motionType == nextWordEnd {
-				charsToDelete++ // include the last character for 'e' motions
-			}
+		nextLine := pos.Line() + 1
+		if nextLine < buf.LineCount() {
+			return buffer.NewPosition(nextLine, 0)
 		}
-		buf.Delete(charsToDelete)
+	}
+
+	return buffer.NewPosition(pos.Line(), col)
+}
+
+// MotionCommand combines a motion with an optional operation
+type MotionCommand struct {
+	motion    Motion
+	operation Operation
+}
+
+func NewMotionCommand(motion Motion, operation Operation) *MotionCommand {
+	return &MotionCommand{
+		motion:    motion,
+		operation: operation,
 	}
 }
 
-func (wmc *wordMotionCommand) execute(e types.Editor) (tea.Model, tea.Cmd) {
-	cursor, _ := e.Buffer().GetPrimaryCursor()
+func (mc *MotionCommand) Execute(e types.Editor) (tea.Model, tea.Cmd) {
+	buf := e.Buffer()
+	cursor, _ := buf.GetPrimaryCursor()
 	curPos := cursor.GetPosition()
+	targetPos := mc.motion.Calculate(buf, curPos)
 
-	targetPos := wmc.getTargetPosition(e.Buffer(), curPos)
-
-	if wmc.motionType == prevWordStart {
-		e.Buffer().MoveCursor(cursor.ID(), curPos.Line(), targetPos.Column())
-		e.HandleCursorMovement()
+	if mc.operation != nil {
+		return mc.operation.Execute(e, curPos, targetPos)
 	}
 
-	wmc.deleteText(e.Buffer(), curPos, targetPos)
-
-	if wmc.changeMode {
-		e.SetMode(state.InsertMode)
-	}
-
+	// If no operation, just move cursor
+	cursor.SetPosition(targetPos)
 	return e, nil
 }
 
-// createWordMotionCommand is a factory function for word motion commands
-func createWordMotionCommand(mType wordMotionType, bigWord bool, changeMode bool) func(e types.Editor) (tea.Model, tea.Cmd) {
-	cmd := &wordMotionCommand{
-		motionType: mType,
-		bigWord:    bigWord,
-		changeMode: changeMode,
-	}
-	return cmd.execute
+// Factory function for word motion commands
+func CreateWordMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (tea.Model, tea.Cmd) {
+	motion := NewWordMotion(bigWord)
+	cmd := NewMotionCommand(motion, operation)
+	return cmd.Execute
 }
