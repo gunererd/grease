@@ -84,6 +84,36 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		e.Buffer().MoveCursor(cursor.ID(), line, 0)
 		e.HandleCursorMovement()
 		return e, nil
+	case "w":
+		cursor, _ := e.Buffer().GetPrimaryCursor()
+		newPos := e.Buffer().NextWordPosition(cursor.GetPosition(), false)
+		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		e.HandleCursorMovement()
+	case "W":
+		cursor, _ := e.Buffer().GetPrimaryCursor()
+		newPos := e.Buffer().NextWordPosition(cursor.GetPosition(), true)
+		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		e.HandleCursorMovement()
+	case "e":
+		cursor, _ := e.Buffer().GetPrimaryCursor()
+		newPos := e.Buffer().NextWordEndPosition(cursor.GetPosition(), false)
+		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		e.HandleCursorMovement()
+	case "E":
+		cursor, _ := e.Buffer().GetPrimaryCursor()
+		newPos := e.Buffer().NextWordEndPosition(cursor.GetPosition(), true)
+		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		e.HandleCursorMovement()
+	case "b":
+		cursor, _ := e.Buffer().GetPrimaryCursor()
+		newPos := e.Buffer().PrevWordPosition(cursor.GetPosition(), false)
+		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		e.HandleCursorMovement()
+	case "B":
+		cursor, _ := e.Buffer().GetPrimaryCursor()
+		newPos := e.Buffer().PrevWordPosition(cursor.GetPosition(), true)
+		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		e.HandleCursorMovement()
 	}
 	return e, nil
 }

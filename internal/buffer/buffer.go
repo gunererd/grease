@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"regexp"
 	"sort"
 	"sync"
 	"unicode/utf8"
@@ -16,6 +17,9 @@ var (
 	ErrInvalidOffset = errors.New("invalid offset")
 	ErrInvalidLine   = errors.New("invalid line number")
 	ErrNoCursor      = errors.New("no cursor available")
+
+	wordPattern    = regexp.MustCompile(`\w+`)
+	bigWordPattern = regexp.MustCompile(`\S+`)
 )
 
 // Buffer represents the text content and provides operations to modify it
@@ -338,6 +342,149 @@ func (b *Buffer) LineLen(line int) (int, error) {
 		return 0, ErrInvalidLine
 	}
 	return len(b.lines[line]), nil
+}
+
+// NextWordPosition moves the cursor to the start of the next word
+func (b *Buffer) NextWordPosition(pos types.Position, bigWord bool) types.Position {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	line := pos.Line()
+	col := pos.Column()
+
+	for line < len(b.lines) {
+		lineStr := string(b.lines[line][col:])
+		pattern := wordPattern
+		if bigWord {
+			pattern = bigWordPattern
+		}
+
+		// Find the next word boundary
+		loc := pattern.FindStringIndex(lineStr)
+
+		// If we found a match on this line
+		if loc != nil {
+			// If we're inside a word, find the next one
+			if loc[0] == 0 {
+				// Look for another word after this one
+				nextLoc := pattern.FindStringIndex(lineStr[loc[1]:])
+				if nextLoc != nil {
+					return NewPosition(line, col+loc[1]+nextLoc[0])
+				}
+			} else {
+				// Move to the start of the found word
+				return NewPosition(line, col+loc[0])
+			}
+		}
+
+		// If no match on this line or at end of line, try next line
+		if line+1 >= len(b.lines) {
+			break
+		}
+		line++
+		col = 0
+	}
+
+	lastLine := len(b.lines) - 1
+	return NewPosition(lastLine, len(b.lines[lastLine])-1)
+}
+
+// NextWordEndPosition moves the cursor to the end of the next word
+func (b *Buffer) NextWordEndPosition(pos types.Position, bigWord bool) types.Position {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	line := pos.Line()
+	col := pos.Column()
+
+	for line < len(b.lines) {
+		lineStr := string(b.lines[line][col:])
+		pattern := wordPattern
+		if bigWord {
+			pattern = bigWordPattern
+		}
+
+		// Find the next word
+		loc := pattern.FindStringIndex(lineStr)
+
+		// If we found a match on this line
+		if loc != nil {
+			// If we're inside a word
+			if loc[0] == 0 {
+				// First check if we're not at the end of current word
+				if col+loc[1]-1 > col {
+					return NewPosition(line, col+loc[1]-1)
+				}
+				// If we are at the end, find the next word
+				nextLoc := pattern.FindStringIndex(lineStr[loc[1]:])
+				if nextLoc != nil {
+					return NewPosition(line, col+loc[1]+nextLoc[1]-1)
+				}
+			} else {
+				// Move to the end of the found word
+				return NewPosition(line, col+loc[1]-1)
+			}
+		}
+
+		// If no match on this line, try next line
+		if line+1 >= len(b.lines) {
+			break
+		}
+		line++
+		col = 0
+	}
+
+	lastLine := len(b.lines) - 1
+	return NewPosition(lastLine, len(b.lines[lastLine])-1)
+}
+
+// PrevWordPosition moves the cursor to the start of the previous word
+func (b *Buffer) PrevWordPosition(pos types.Position, bigWord bool) types.Position {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	line := pos.Line()
+	col := pos.Column()
+
+	for line >= 0 {
+		// Get the text before the cursor on this line
+		lineStr := string(b.lines[line][:col])
+		pattern := wordPattern
+		if bigWord {
+			pattern = bigWordPattern
+		}
+
+		// Find all matches in the line up to cursor
+		matches := pattern.FindAllStringIndex(lineStr, -1)
+
+		if matches != nil {
+			// Find the last match that starts before our cursor
+			for i := len(matches) - 1; i >= 0; i-- {
+				match := matches[i]
+				// If cursor is after start of a word, move to its start
+				if match[0] < col && col <= match[1] {
+					return NewPosition(line, match[0])
+				}
+				// If cursor is at start of a word and it's not the first word,
+				// move to start of previous word
+				if match[0] == col && i > 0 {
+					return NewPosition(line, matches[i-1][0])
+				}
+				// If cursor is before this word's start, use this word
+				if match[0] < col {
+					return NewPosition(line, match[0])
+				}
+			}
+		}
+
+		if line == 0 {
+			return NewPosition(0, 0)
+		}
+		line--
+		col = len(b.lines[line])
+	}
+
+	return NewPosition(0, 0)
 }
 
 // validatePosition checks if a position is valid within the buffer

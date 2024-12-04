@@ -17,6 +17,9 @@ type Buffer interface {
 	GetPrimaryCursor() (Cursor, error)
 	MoveCursorRelative(cursorID int, lineOffset, columnOffset int) error
 	MoveCursor(cursorID int, lineOffset, columnOffset int) error
+	NextWordPosition(pos Position, bigWord bool) Position
+	NextWordEndPosition(pos Position, bigWord bool) Position
+	PrevWordPosition(pos Position, bigWord bool) Position
 
 	Insert(text string) error
 	Delete(count int) error
