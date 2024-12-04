@@ -41,6 +41,180 @@ func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
 		},
 	})
 
+	// Change word commands
+	kt.Add([]string{"c", "W"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordPos := e.Buffer().NextWordPosition(curPos, true)
+
+			if nextWordPos.Line() == curPos.Line() {
+				charsToDelete := nextWordPos.Column() - curPos.Column()
+				e.Buffer().Delete(charsToDelete)
+			}
+
+			e.SetMode(state.InsertMode)
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"c", "e"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordEnd := e.Buffer().NextWordEndPosition(curPos, false)
+
+			if nextWordEnd.Line() == curPos.Line() {
+				charsToDelete := nextWordEnd.Column() - curPos.Column() + 1 // +1 to include the last character
+				e.Buffer().Delete(charsToDelete)
+			}
+
+			e.SetMode(state.InsertMode)
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"c", "E"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordEnd := e.Buffer().NextWordEndPosition(curPos, true)
+
+			if nextWordEnd.Line() == curPos.Line() {
+				charsToDelete := nextWordEnd.Column() - curPos.Column() + 1 // +1 to include the last character
+				e.Buffer().Delete(charsToDelete)
+			}
+
+			e.SetMode(state.InsertMode)
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"c", "b"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			prevWordStart := e.Buffer().PrevWordPosition(curPos, false)
+
+			if prevWordStart.Line() == curPos.Line() {
+				charsToDelete := curPos.Column() - prevWordStart.Column()
+				e.Buffer().MoveCursor(cursor.ID(), curPos.Line(), prevWordStart.Column())
+				e.HandleCursorMovement()
+				e.Buffer().Delete(charsToDelete)
+			}
+
+			e.SetMode(state.InsertMode)
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"c", "B"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			prevWordStart := e.Buffer().PrevWordPosition(curPos, true)
+
+			if prevWordStart.Line() == curPos.Line() {
+				charsToDelete := curPos.Column() - prevWordStart.Column()
+				e.Buffer().MoveCursor(cursor.ID(), curPos.Line(), prevWordStart.Column())
+				e.HandleCursorMovement()
+				e.Buffer().Delete(charsToDelete)
+			}
+
+			e.SetMode(state.InsertMode)
+			return e, nil
+		},
+	})
+
+	// Delete word commands
+	kt.Add([]string{"d", "w"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordPos := e.Buffer().NextWordPosition(curPos, false)
+
+			if nextWordPos.Line() == curPos.Line() {
+				charsToDelete := nextWordPos.Column() - curPos.Column()
+				e.Buffer().Delete(charsToDelete)
+			}
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"d", "W"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordPos := e.Buffer().NextWordPosition(curPos, true)
+
+			if nextWordPos.Line() == curPos.Line() {
+				charsToDelete := nextWordPos.Column() - curPos.Column()
+				e.Buffer().Delete(charsToDelete)
+			}
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"d", "e"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordEnd := e.Buffer().NextWordEndPosition(curPos, false)
+
+			if nextWordEnd.Line() == curPos.Line() {
+				charsToDelete := nextWordEnd.Column() - curPos.Column() + 1 // +1 to include the last character
+				e.Buffer().Delete(charsToDelete)
+			}
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"d", "E"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordEnd := e.Buffer().NextWordEndPosition(curPos, true)
+
+			if nextWordEnd.Line() == curPos.Line() {
+				charsToDelete := nextWordEnd.Column() - curPos.Column() + 1 // +1 to include the last character
+				e.Buffer().Delete(charsToDelete)
+			}
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"d", "b"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			prevWordStart := e.Buffer().PrevWordPosition(curPos, false)
+
+			if prevWordStart.Line() == curPos.Line() {
+				charsToDelete := curPos.Column() - prevWordStart.Column()
+				e.Buffer().MoveCursor(cursor.ID(), curPos.Line(), prevWordStart.Column())
+				e.HandleCursorMovement()
+				e.Buffer().Delete(charsToDelete)
+			}
+			return e, nil
+		},
+	})
+
+	kt.Add([]string{"d", "B"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			prevWordStart := e.Buffer().PrevWordPosition(curPos, true)
+
+			if prevWordStart.Line() == curPos.Line() {
+				charsToDelete := curPos.Column() - prevWordStart.Column()
+				e.Buffer().MoveCursor(cursor.ID(), curPos.Line(), prevWordStart.Column())
+				e.HandleCursorMovement()
+				e.Buffer().Delete(charsToDelete)
+			}
+			return e, nil
+		},
+	})
+
 	return &NormalMode{
 		keytree: kt,
 	}
