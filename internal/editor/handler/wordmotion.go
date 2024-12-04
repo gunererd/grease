@@ -129,3 +129,114 @@ func CreateWordMotionCommand(bigWord bool, operation Operation) func(e types.Edi
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
 }
+
+// Factory function for word end motion commands
+func CreateWordEndMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (tea.Model, tea.Cmd) {
+	motion := NewWordEndMotion(bigWord)
+	cmd := NewMotionCommand(motion, operation)
+	return cmd.Execute
+}
+
+// Factory function for word back motion commands
+func CreateWordBackMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (tea.Model, tea.Cmd) {
+	motion := NewWordBackMotion(bigWord)
+	cmd := NewMotionCommand(motion, operation)
+	return cmd.Execute
+}
+
+// WordEndMotion implements Motion for word end movements
+type WordEndMotion struct {
+	bigWord bool
+}
+
+func NewWordEndMotion(bigWord bool) *WordEndMotion {
+	return &WordEndMotion{bigWord: bigWord}
+}
+
+func (wm *WordEndMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
+	line, _ := buf.GetLine(pos.Line())
+	runes := []rune(line)
+	col := pos.Column()
+
+	// If we're at the end of the current line, try to move to the next line
+	if col >= len(runes) {
+		nextLine := pos.Line() + 1
+		if nextLine < buf.LineCount() {
+			return buffer.NewPosition(nextLine, 0)
+		}
+		return pos
+	}
+
+	if wm.bigWord {
+		// For 'E', move to end of current WORD
+		for col < len(runes)-1 && !isWhitespace(runes[col+1]) {
+			col++
+		}
+	} else {
+		// For 'e', handle word characters and punctuation separately
+		if col < len(runes)-1 {
+			startType := getCharType(runes[col+1])
+			col++
+			// Move to the last character of the current word
+			for col < len(runes)-1 && getCharType(runes[col+1]) == startType {
+				col++
+			}
+		}
+	}
+
+	return buffer.NewPosition(pos.Line(), col)
+}
+
+// WordBackMotion implements Motion for word backward movements
+type WordBackMotion struct {
+	bigWord bool
+}
+
+func NewWordBackMotion(bigWord bool) *WordBackMotion {
+	return &WordBackMotion{bigWord: bigWord}
+}
+
+func (wm *WordBackMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
+	line, _ := buf.GetLine(pos.Line())
+	runes := []rune(line)
+	col := pos.Column()
+
+	// If we're at the start of the current line, try to move to the previous line
+	if col <= 0 {
+		prevLine := pos.Line() - 1
+		if prevLine >= 0 {
+			prevLineLen, _ := buf.LineLen(prevLine)
+			return buffer.NewPosition(prevLine, prevLineLen)
+		}
+		return pos
+	}
+
+	if wm.bigWord {
+		// For 'B', move backward to start of current WORD
+		// Skip whitespace
+		for col > 0 && isWhitespace(runes[col-1]) {
+			col--
+		}
+		// Move to start of current WORD
+		for col > 0 && !isWhitespace(runes[col-1]) {
+			col--
+		}
+	} else {
+		// For 'b', handle word characters and punctuation separately
+		if col > 0 {
+			// Skip whitespace
+			for col > 0 && isWhitespace(runes[col-1]) {
+				col--
+			}
+			if col > 0 {
+				startType := getCharType(runes[col-1])
+				// Move to start of current word
+				for col > 0 && getCharType(runes[col-1]) == startType {
+					col--
+				}
+			}
+		}
+	}
+
+	return buffer.NewPosition(pos.Line(), col)
+}

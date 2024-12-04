@@ -43,3 +43,36 @@ func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) (tea.
 	// TODO: Add command to switch to insert mode
 	return model, cmd
 }
+
+// YankOperation implements copying of text between two positions
+type YankOperation struct {
+	register string // Register to store yanked text
+}
+
+func NewYankOperation() *YankOperation {
+	return &YankOperation{}
+}
+
+func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
+	buf := e.Buffer()
+	if from.Line() == to.Line() {
+		// Handle single line yank
+		line, _ := buf.GetLine(from.Line())
+		y.register = line[from.Column():to.Column()]
+	} else {
+		// Handle multi-line yank
+		var yankedText string
+		for i := from.Line(); i <= to.Line(); i++ {
+			line, _ := buf.GetLine(i)
+			if i == from.Line() {
+				yankedText += line[from.Column():] + "\n"
+			} else if i == to.Line() {
+				yankedText += line[:to.Column()]
+			} else {
+				yankedText += line + "\n"
+			}
+		}
+		y.register = yankedText
+	}
+	return e, nil
+}

@@ -31,6 +31,21 @@ func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
 		Execute: CreateWordMotionCommand(true, NewChangeOperation()),
 	})
 
+	kt.Add([]string{"c", "e"}, keytree.KeyAction{
+		Execute: CreateWordEndMotionCommand(false, NewChangeOperation()),
+	})
+
+	kt.Add([]string{"c", "E"}, keytree.KeyAction{
+		Execute: CreateWordEndMotionCommand(true, NewChangeOperation()),
+	})
+
+	kt.Add([]string{"c", "b"}, keytree.KeyAction{
+		Execute: CreateWordBackMotionCommand(false, NewChangeOperation()),
+	})
+	kt.Add([]string{"c", "B"}, keytree.KeyAction{
+		Execute: CreateWordBackMotionCommand(true, NewChangeOperation()),
+	})
+
 	// Word motion commands - delete
 	kt.Add([]string{"d", "w"}, keytree.KeyAction{
 		Execute: CreateWordMotionCommand(false, NewDeleteOperation()),
@@ -39,12 +54,39 @@ func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
 		Execute: CreateWordMotionCommand(true, NewDeleteOperation()),
 	})
 
-	// Word motion commands - movement only
-	kt.Add([]string{"w"}, keytree.KeyAction{
-		Execute: CreateWordMotionCommand(false, nil),
+	kt.Add([]string{"d", "e"}, keytree.KeyAction{
+		Execute: CreateWordEndMotionCommand(false, NewDeleteOperation()),
 	})
-	kt.Add([]string{"W"}, keytree.KeyAction{
-		Execute: CreateWordMotionCommand(true, nil),
+
+	kt.Add([]string{"d", "E"}, keytree.KeyAction{
+		Execute: CreateWordEndMotionCommand(true, NewDeleteOperation()),
+	})
+
+	kt.Add([]string{"d", "b"}, keytree.KeyAction{
+		Execute: CreateWordBackMotionCommand(false, NewDeleteOperation()),
+	})
+	kt.Add([]string{"d", "B"}, keytree.KeyAction{
+		Execute: CreateWordBackMotionCommand(true, NewDeleteOperation()),
+	})
+
+	// Word motion commands - yank
+	kt.Add([]string{"y", "w"}, keytree.KeyAction{
+		Execute: CreateWordMotionCommand(false, NewYankOperation()),
+	})
+	kt.Add([]string{"y", "W"}, keytree.KeyAction{
+		Execute: CreateWordMotionCommand(true, NewYankOperation()),
+	})
+	kt.Add([]string{"y", "e"}, keytree.KeyAction{
+		Execute: CreateWordEndMotionCommand(false, NewYankOperation()),
+	})
+	kt.Add([]string{"y", "E"}, keytree.KeyAction{
+		Execute: CreateWordEndMotionCommand(true, NewYankOperation()),
+	})
+	kt.Add([]string{"y", "b"}, keytree.KeyAction{
+		Execute: CreateWordBackMotionCommand(false, NewYankOperation()),
+	})
+	kt.Add([]string{"y", "B"}, keytree.KeyAction{
+		Execute: CreateWordBackMotionCommand(true, NewYankOperation()),
 	})
 
 	return &NormalMode{
@@ -110,35 +152,29 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		e.HandleCursorMovement()
 		return e, nil
 	case "w":
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		newPos := e.Buffer().NextWordPosition(cursor.GetPosition(), false)
-		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		model, cmd := CreateWordMotionCommand(false, nil)(e)
 		e.HandleCursorMovement()
+		return model, cmd
 	case "W":
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		newPos := e.Buffer().NextWordPosition(cursor.GetPosition(), true)
-		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		model, cmd := CreateWordMotionCommand(true, nil)(e)
 		e.HandleCursorMovement()
+		return model, cmd
 	case "e":
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		newPos := e.Buffer().NextWordEndPosition(cursor.GetPosition(), false)
-		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		model, cmd := CreateWordEndMotionCommand(false, nil)(e)
 		e.HandleCursorMovement()
+		return model, cmd
 	case "E":
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		newPos := e.Buffer().NextWordEndPosition(cursor.GetPosition(), true)
-		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		model, cmd := CreateWordEndMotionCommand(true, nil)(e)
 		e.HandleCursorMovement()
+		return model, cmd
 	case "b":
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		newPos := e.Buffer().PrevWordPosition(cursor.GetPosition(), false)
-		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		model, cmd := CreateWordBackMotionCommand(false, nil)(e)
 		e.HandleCursorMovement()
+		return model, cmd
 	case "B":
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		newPos := e.Buffer().PrevWordPosition(cursor.GetPosition(), true)
-		e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+		model, cmd := CreateWordBackMotionCommand(true, nil)(e)
 		e.HandleCursorMovement()
+		return model, cmd
 	}
 	return e, nil
 }
