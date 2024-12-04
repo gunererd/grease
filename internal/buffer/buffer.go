@@ -279,8 +279,21 @@ func (b *Buffer) Delete(count int) error {
 	})
 
 	for _, cursor := range cursors {
-		if err := b.deleteAt(cursor.GetPosition(), count); err != nil {
-			return err
+		pos := cursor.GetPosition()
+		// For backspace (count < 0), move cursor left first
+		if count < 0 {
+			if pos.Column() > 0 {
+				newPos := NewPosition(pos.Line(), pos.Column()-1)
+				cursor.SetPosition(newPos)
+				if err := b.deleteAt(newPos, 1); err != nil {
+					return err
+				}
+			}
+		} else {
+			// For delete (count > 0), delete at current position
+			if err := b.deleteAt(pos, count); err != nil {
+				return err
+			}
 		}
 	}
 
