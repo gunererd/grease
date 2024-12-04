@@ -23,6 +23,24 @@ func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
 		},
 	})
 
+	// Vim style change word
+	kt.Add([]string{"c", "w"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			cursor, _ := e.Buffer().GetPrimaryCursor()
+			curPos := cursor.GetPosition()
+			nextWordPos := e.Buffer().NextWordPosition(curPos, false)
+
+			// Only delete within the current line
+			if nextWordPos.Line() == curPos.Line() {
+				charsToDelete := nextWordPos.Column() - curPos.Column()
+				e.Buffer().Delete(charsToDelete)
+			}
+
+			e.SetMode(state.InsertMode)
+			return e, nil
+		},
+	})
+
 	return &NormalMode{
 		keytree: kt,
 	}
