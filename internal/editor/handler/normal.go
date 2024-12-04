@@ -175,6 +175,14 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		model, cmd := CreateWordBackMotionCommand(true, nil)(e)
 		e.HandleCursorMovement()
 		return model, cmd
+	case "p":
+		model, cmd := NewPasteOperation(false).Execute(e, cursor.GetPosition(), cursor.GetPosition())
+		e.HandleCursorMovement()
+		return model, cmd
+	case "P":
+		model, cmd := NewPasteOperation(true).Execute(e, cursor.GetPosition(), cursor.GetPosition())
+		e.HandleCursorMovement()
+		return model, cmd
 	}
 	return e, nil
 }

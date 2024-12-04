@@ -2,6 +2,7 @@ package handler
 
 import (
 	"log"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/state"
@@ -48,9 +49,7 @@ func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) (tea.
 }
 
 // YankOperation implements copying of text between two positions
-type YankOperation struct {
-	register string // Register to store yanked text
-}
+type YankOperation struct{}
 
 func NewYankOperation() *YankOperation {
 	return &YankOperation{}
@@ -58,13 +57,14 @@ func NewYankOperation() *YankOperation {
 
 func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
 	buf := e.Buffer()
+	var yankedText string
+
 	if from.Line() == to.Line() {
 		// Handle single line yank
 		line, _ := buf.GetLine(from.Line())
-		y.register = line[from.Column():to.Column()]
+		yankedText = line[from.Column():to.Column()]
 	} else {
 		// Handle multi-line yank
-		var yankedText string
 		for i := from.Line(); i <= to.Line(); i++ {
 			line, _ := buf.GetLine(i)
 			if i == from.Line() {
@@ -75,8 +75,71 @@ func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (tea.Mo
 				yankedText += line + "\n"
 			}
 		}
-		y.register = yankedText
 	}
-	log.Println("Yanked text:", y.register)
+
+	defaultRegister.Set(yankedText)
+	log.Println("Yanked text:", yankedText)
+	return e, nil
+}
+
+// PasteOperation implements pasting of text after or before cursor
+type PasteOperation struct {
+	before bool // If true, paste before cursor
+}
+
+func NewPasteOperation(before bool) *PasteOperation {
+	return &PasteOperation{before: before}
+}
+
+func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
+	buf := e.Buffer()
+	text := defaultRegister.Get()
+	cursor, _ := buf.GetPrimaryCursor()
+
+	if text == "" {
+		return e, nil
+	}
+
+	// Split text into lines
+	lines := strings.Split(text, "\n")
+
+	if len(lines) == 1 {
+		// Single line paste
+		line, _ := buf.GetLine(from.Line())
+		insertPos := from.Column()
+		if !p.before {
+			insertPos++
+		}
+		newLine := line[:insertPos] + text + line[insertPos:]
+		buf.ReplaceLine(from.Line(), newLine)
+
+		// Move cursor to end of pasted text
+		newCol := insertPos + len(text)
+		buf.MoveCursor(cursor.ID(), from.Line(), newCol)
+	} else {
+		// Multi-line paste
+		currentLine, _ := buf.GetLine(from.Line())
+		insertPos := from.Column()
+		if !p.before {
+			insertPos++
+		}
+
+		// Handle first line
+		firstLine := currentLine[:insertPos] + lines[0]
+		buf.ReplaceLine(from.Line(), firstLine)
+
+		// Insert middle lines
+		for i := 1; i < len(lines)-1; i++ {
+			buf.ReplaceLine(from.Line()+i, lines[i])
+		}
+
+		// Handle last line
+		lastLine := lines[len(lines)-1] + currentLine[insertPos:]
+		buf.ReplaceLine(from.Line()+len(lines)-1, lastLine)
+
+		// Move cursor to start of pasted text
+		buf.MoveCursor(cursor.ID(), from.Line()+len(lines)-1, len(lines[len(lines)-1]))
+	}
+
 	return e, nil
 }
