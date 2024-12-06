@@ -119,16 +119,24 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		}
 		model.SetMode(state.NormalMode)
 	case "d":
-		// Delete the selected text
 		deleteOp := NewHistoryAwareOperation(NewDeleteOperation(), e.HistoryManager())
 		model, cmd = deleteOp.Execute(e, vm.selectionStart, cursor.GetPosition())
 
-		// Clear highlight and exit visual mode
 		if vm.highlightID != -1 {
 			e.HighlightManager().Remove(vm.highlightID)
 			vm.highlightID = -1
 		}
 		model.SetMode(state.NormalMode)
+		model.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
+		model.HandleCursorMovement()
+	case "c":
+		changeOp := NewHistoryAwareOperation(NewChangeOperation(), e.HistoryManager())
+		model, cmd = changeOp.Execute(e, vm.selectionStart, cursor.GetPosition())
+
+		if vm.highlightID != -1 {
+			e.HighlightManager().Remove(vm.highlightID)
+			vm.highlightID = -1
+		}
 		model.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
 		model.HandleCursorMovement()
 	}
