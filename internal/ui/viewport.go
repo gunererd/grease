@@ -342,7 +342,7 @@ func (vp *Viewport) applyStyles(lineContent string, highlightRanges []StyleRange
 			result.WriteString(cursor.style.Render(string(lineContent[cursor.position])))
 			// Write highlighted text after cursor
 			if cursor.position+1 < r.end {
-				result.WriteString(r.style.Render(lineContent[cursor.position+1:r.end]))
+				result.WriteString(r.style.Render(lineContent[cursor.position+1 : r.end]))
 			}
 		} else {
 			// Add styled text without cursor
@@ -373,7 +373,7 @@ func (vp *Viewport) applyStyles(lineContent string, highlightRanges []StyleRange
 // renderLine processes and formats a single line of content
 func (vp *Viewport) renderLine(content string, lineNumber int) string {
 	visibleContent := vp.prepareVisibleContent(content)
-	highlightRanges, cursor := vp.collectStyleRanges(lineNumber, len(visibleContent))
+	highlightRanges, cursor := vp.collectStyleRanges(lineNumber, len(content))
 
 	if len(highlightRanges) == 0 && cursor == nil {
 		return visibleContent

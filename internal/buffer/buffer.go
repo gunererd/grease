@@ -566,7 +566,7 @@ func (b *Buffer) RemoveLine(line int) error {
 			// Move cursor up one line
 			newLine := cursorPos.Line() - 1
 			newColumn := cursorPos.Column()
-			
+
 			// Ensure cursor column is valid in the new line
 			if newLine >= 0 && newLine < len(b.lines) {
 				lineLen := len(b.lines[newLine])
@@ -574,7 +574,7 @@ func (b *Buffer) RemoveLine(line int) error {
 					newColumn = lineLen
 				}
 			}
-			
+
 			cursor.SetPosition(NewPosition(newLine, newColumn))
 		} else if cursorPos.Line() == line {
 			// If cursor was on the removed line, move it to the end of the previous line
