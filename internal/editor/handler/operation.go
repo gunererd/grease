@@ -124,6 +124,14 @@ func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (types
 		if !p.before {
 			insertPos++
 		}
+
+		// Handle empty lines
+		if len(line) == 0 {
+			buf.ReplaceLine(from.Line(), text)
+			buf.MoveCursor(cursor.ID(), from.Line(), len(text))
+			return e, nil
+		}
+
 		newLine := line[:insertPos] + text + line[insertPos:]
 		buf.ReplaceLine(from.Line(), newLine)
 
@@ -139,7 +147,12 @@ func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (types
 		}
 
 		// Handle first line
-		firstLine := currentLine[:insertPos] + lines[0]
+		var firstLine string
+		if len(currentLine) == 0 {
+			firstLine = lines[0]
+		} else {
+			firstLine = currentLine[:insertPos] + lines[0]
+		}
 		buf.ReplaceLine(from.Line(), firstLine)
 
 		// Insert middle lines
@@ -148,12 +161,16 @@ func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (types
 		}
 
 		// Handle last line
-		lastLine := lines[len(lines)-1] + currentLine[insertPos:]
-		buf.InsertLine(from.Line()+len(lines)-1, lastLine)
+		if len(lines) > 1 {
+			lastLine := lines[len(lines)-1]
+			if len(currentLine) > 0 {
+				lastLine += currentLine[insertPos:]
+			}
+			buf.InsertLine(from.Line()+len(lines)-1, lastLine)
+		}
 
 		// Move cursor to end of pasted text
 		buf.MoveCursor(cursor.ID(), from.Line()+len(lines)-1, len(lines[len(lines)-1]))
 	}
-
 	return e, nil
 }
