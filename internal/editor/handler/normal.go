@@ -160,7 +160,7 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		e.Buffer().MoveCursor(cursor.ID(), line, lineLength)
 		e.HandleCursorMovement()
 		return e, nil
-	case "^":
+	case "^", "0":
 		// Vim style jump to beginning of line
 		cursor, _ := e.Buffer().GetPrimaryCursor()
 		line := cursor.GetPosition().Line()

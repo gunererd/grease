@@ -94,8 +94,19 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 	case "B":
 		model, cmd = CreateWordBackMotionCommand(true, nil)(e)
 		model.HandleCursorMovement()
+	case "$":
+		// Vim style jump to end of line
 		cursor, _ := e.Buffer().GetPrimaryCursor()
-		e.Viewport().CenterOn(cursor.GetPosition())
+		line := cursor.GetPosition().Line()
+		lineLength, _ := e.Buffer().LineLen(line)
+		e.Buffer().MoveCursor(cursor.ID(), line, lineLength-1)
+		e.HandleCursorMovement()
+	case "^", "0":
+		// Vim style jump to beginning of line
+		cursor, _ := e.Buffer().GetPrimaryCursor()
+		line := cursor.GetPosition().Line()
+		e.Buffer().MoveCursor(cursor.ID(), line, 0)
+		e.HandleCursorMovement()
 	case "y":
 		// Yank the selected text
 		yankOp := NewYankOperation()
