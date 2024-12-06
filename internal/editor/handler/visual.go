@@ -21,20 +21,20 @@ func NewVisualMode(kt *keytree.KeyTree, hm types.HistoryManager) *VisualMode {
 	}
 }
 
-func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
+func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 	cursor, err := e.Buffer().GetPrimaryCursor()
 	if err != nil {
 		return e, nil
 	}
 
 	// Initialize visual selection if not already done
-	if h.highlightID == -1 {
-		h.selectionStart = cursor.GetPosition()
-		h.highlightID = e.HighlightManager().Add(
-			highlight.CreateVisualHighlight(h.selectionStart, h.selectionStart),
+	if vm.highlightID == -1 {
+		vm.selectionStart = cursor.GetPosition()
+		vm.highlightID = e.HighlightManager().Add(
+			highlight.CreateVisualHighlight(vm.selectionStart, vm.selectionStart),
 		)
-		if h.highlightID == -1 {
-			log.Printf("Failed to create visual highlight at position %v", h.selectionStart)
+		if vm.highlightID == -1 {
+			log.Printf("Failed to create visual highlight at position %v", vm.selectionStart)
 		}
 	}
 
@@ -43,9 +43,9 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	switch msg.String() {
 	case "esc":
 		// Clear highlight when exiting visual mode
-		if h.highlightID != -1 {
-			e.HighlightManager().Remove(h.highlightID)
-			h.highlightID = -1
+		if vm.highlightID != -1 {
+			e.HighlightManager().Remove(vm.highlightID)
+			vm.highlightID = -1
 		}
 		e.SetMode(state.NormalMode)
 	case "h":
@@ -62,16 +62,16 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		e.HandleCursorMovement()
 	case "i":
 		// Clear highlight when entering insert mode
-		if h.highlightID != -1 {
-			e.HighlightManager().Remove(h.highlightID)
-			h.highlightID = -1
+		if vm.highlightID != -1 {
+			e.HighlightManager().Remove(vm.highlightID)
+			vm.highlightID = -1
 		}
 		e.SetMode(state.InsertMode)
 	case ":":
 		// Clear highlight when entering command mode
-		if h.highlightID != -1 {
-			e.HighlightManager().Remove(h.highlightID)
-			h.highlightID = -1
+		if vm.highlightID != -1 {
+			e.HighlightManager().Remove(vm.highlightID)
+			vm.highlightID = -1
 		}
 		e.SetMode(state.CommandMode)
 	case "q":
@@ -94,24 +94,33 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	case "B":
 		model, cmd = CreateWordBackMotionCommand(true, nil)(e)
 		model.HandleCursorMovement()
-	case "z":
-		// Center viewport on cursor
 		cursor, _ := e.Buffer().GetPrimaryCursor()
 		e.Viewport().CenterOn(cursor.GetPosition())
+	case "y":
+		// Yank the selected text
+		yankOp := NewYankOperation()
+		model, cmd = yankOp.Execute(e, vm.selectionStart, cursor.GetPosition())
+
+		// Clear highlight and exit visual mode
+		if vm.highlightID != -1 {
+			e.HighlightManager().Remove(vm.highlightID)
+			vm.highlightID = -1
+		}
+		model.SetMode(state.NormalMode)
 	}
 
 	// Update highlight to match current cursor position
-	if h.highlightID != -1 {
+	if vm.highlightID != -1 {
 		currentPos := cursor.GetPosition()
 		var iposition types.Position = currentPos
 		if !e.HighlightManager().Update(
-			h.highlightID,
-			highlight.CreateVisualHighlight(h.selectionStart, iposition),
+			vm.highlightID,
+			highlight.CreateVisualHighlight(vm.selectionStart, iposition),
 		) {
 			log.Printf("Failed to update visual highlight %d from %v to %v",
-				h.highlightID, h.selectionStart, currentPos)
+				vm.highlightID, vm.selectionStart, currentPos)
 			// Reset highlight state since update failed
-			h.highlightID = -1
+			vm.highlightID = -1
 		}
 	}
 
