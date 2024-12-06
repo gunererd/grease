@@ -372,6 +372,11 @@ func (vp *Viewport) applyStyles(lineContent string, highlightRanges []StyleRange
 
 // renderLine processes and formats a single line of content
 func (vp *Viewport) renderLine(content string, lineNumber int) string {
+	// Ensure empty lines have at least one space for cursor rendering
+	if len(content) == 0 {
+		content = " "
+	}
+
 	visibleContent := vp.prepareVisibleContent(content)
 	highlightRanges, cursor := vp.collectStyleRanges(lineNumber, len(content))
 
