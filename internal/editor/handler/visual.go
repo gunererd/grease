@@ -118,6 +118,21 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 			vm.highlightID = -1
 		}
 		model.SetMode(state.NormalMode)
+	case "d":
+		// Delete the selected text
+		deleteOp := NewDeleteOperation()
+		model, cmd = deleteOp.Execute(e, vm.selectionStart, cursor.GetPosition())
+
+		// Clear highlight and exit visual mode
+		if vm.highlightID != -1 {
+			e.HighlightManager().Remove(vm.highlightID)
+			vm.highlightID = -1
+		}
+		model.SetMode(state.NormalMode)
+		model.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
+		model.HandleCursorMovement()
+	case "z":
+		// TODO: Implement scroll to cursor
 	}
 
 	// Update highlight to match current cursor position

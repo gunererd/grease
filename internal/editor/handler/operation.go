@@ -26,7 +26,7 @@ func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (type
 	if from.Line() == to.Line() {
 		// Single line deletion
 		line, _ := buf.GetLine(from.Line())
-		newLine := line[:from.Column()] + line[to.Column():]
+		newLine := line[:from.Column()] + line[to.Column()+1:]
 		buf.ReplaceLine(from.Line(), newLine)
 	} else {
 		// Multi-line deletion
@@ -34,7 +34,7 @@ func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (type
 		lastLine, _ := buf.GetLine(to.Line())
 
 		// Combine first and last line
-		newLine := firstLine[:from.Column()] + lastLine[to.Column():]
+		newLine := firstLine[:from.Column()] + lastLine[to.Column()+1:]
 		buf.ReplaceLine(from.Line(), newLine)
 
 		// Remove lines in between
