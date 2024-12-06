@@ -11,7 +11,7 @@ import (
 
 // Operation defines what actions can be performed between two positions in a buffer
 type Operation interface {
-	Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd)
+	Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd)
 }
 
 // DeleteOperation implements deletion of text between two positions
@@ -21,7 +21,7 @@ func NewDeleteOperation() *DeleteOperation {
 	return &DeleteOperation{}
 }
 
-func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
+func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
 	buf := e.Buffer()
 	if from.Line() == to.Line() {
 		// Single line deletion
@@ -56,7 +56,7 @@ func NewChangeOperation() *ChangeOperation {
 	}
 }
 
-func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
+func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
 	model, cmd := c.DeleteOperation.Execute(e, from, to)
 	e.SetMode(state.InsertMode)
 	return model, cmd
@@ -69,7 +69,7 @@ func NewYankOperation() *YankOperation {
 	return &YankOperation{}
 }
 
-func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
+func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
 	buf := e.Buffer()
 	var yankedText string
 
@@ -105,7 +105,7 @@ func NewPasteOperation(before bool) *PasteOperation {
 	return &PasteOperation{before: before}
 }
 
-func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
+func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
 	buf := e.Buffer()
 	text := defaultRegister.Get()
 	cursor, _ := buf.GetPrimaryCursor()

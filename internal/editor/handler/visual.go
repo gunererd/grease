@@ -21,7 +21,7 @@ func NewVisualMode(kt *keytree.KeyTree, hm types.HistoryManager) *VisualMode {
 	}
 }
 
-func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd) {
+func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 	cursor, err := e.Buffer().GetPrimaryCursor()
 	if err != nil {
 		return e, nil
@@ -38,6 +38,8 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		}
 	}
 
+	var model types.Editor = e
+	var cmd tea.Cmd
 	switch msg.String() {
 	case "esc":
 		// Clear highlight when exiting visual mode
@@ -74,6 +76,24 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		e.SetMode(state.CommandMode)
 	case "q":
 		return e, tea.Quit
+	case "w":
+		model, cmd = CreateWordMotionCommand(false, nil)(e)
+		model.HandleCursorMovement()
+	case "W":
+		model, cmd = CreateWordMotionCommand(true, nil)(e)
+		model.HandleCursorMovement()
+	case "e":
+		model, cmd = CreateWordEndMotionCommand(false, nil)(e)
+		model.HandleCursorMovement()
+	case "E":
+		model, cmd = CreateWordEndMotionCommand(true, nil)(e)
+		model.HandleCursorMovement()
+	case "b":
+		model, cmd = CreateWordBackMotionCommand(false, nil)(e)
+		model.HandleCursorMovement()
+	case "B":
+		model, cmd = CreateWordBackMotionCommand(true, nil)(e)
+		model.HandleCursorMovement()
 	case "z":
 		// Center viewport on cursor
 		cursor, _ := e.Buffer().GetPrimaryCursor()
@@ -95,6 +115,5 @@ func (h *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		}
 	}
 
-	e.HandleCursorMovement()
-	return e, nil
+	return model, cmd
 }

@@ -12,7 +12,7 @@ func NewInsertMode() *InsertMode {
 	return &InsertMode{}
 }
 
-func (h *InsertMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd) {
+func (h *InsertMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEsc:
 		e.SetMode(state.NormalMode)

@@ -6,8 +6,8 @@ import tea "github.com/charmbracelet/bubbletea"
 // This allows for different implementations of history management
 // to be used interchangeably.
 type HistoryManager interface {
-	Undo(e Editor) (tea.Model, tea.Cmd)
-	Redo(e Editor) (tea.Model, tea.Cmd)
+	Undo(e Editor) (Editor, tea.Cmd)
+	Redo(e Editor) (Editor, tea.Cmd)
 	Push(entry HistoryEntry)
 	CanUndo() bool
 	CanRedo() bool

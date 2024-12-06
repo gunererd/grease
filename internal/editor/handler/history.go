@@ -82,7 +82,7 @@ func (h *HistoryManager) PushRedo(entry types.HistoryEntry) {
 }
 
 // Undo restores the buffer and cursor to the state before the last operation
-func (h *HistoryManager) Undo(e types.Editor) (tea.Model, tea.Cmd) {
+func (h *HistoryManager) Undo(e types.Editor) (types.Editor, tea.Cmd) {
 	if !h.CanUndo() {
 		return e, nil
 	}
@@ -106,7 +106,7 @@ func (h *HistoryManager) Undo(e types.Editor) (tea.Model, tea.Cmd) {
 }
 
 // Redo reapplies the last undone operation
-func (h *HistoryManager) Redo(e types.Editor) (tea.Model, tea.Cmd) {
+func (h *HistoryManager) Redo(e types.Editor) (types.Editor, tea.Cmd) {
 	if !h.CanRedo() {
 		return e, nil
 	}
@@ -181,7 +181,7 @@ func captureLines(buf types.Buffer, from, to types.Position) map[int]string {
 }
 
 // Execute implements the Operation interface with history tracking
-func (h *HistoryAwareOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
+func (h *HistoryAwareOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
 	// Capture state before operation
 	buf := e.Buffer()
 	cursor, _ := buf.GetPrimaryCursor()

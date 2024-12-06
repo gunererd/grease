@@ -12,7 +12,7 @@ func NewCommandMode() *CommandMode {
 	return &CommandMode{}
 }
 
-func (h *CommandMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd) {
+func (h *CommandMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEsc:
 		e.SetMode(state.NormalMode)

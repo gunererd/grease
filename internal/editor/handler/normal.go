@@ -16,7 +16,7 @@ func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager) *NormalMod
 
 	// Vim style Jump to beginning of buffer
 	kt.Add([]string{"g", "g"}, keytree.KeyAction{
-		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+		Execute: func(e types.Editor) (types.Editor, tea.Cmd) {
 			cursor, _ := e.Buffer().GetPrimaryCursor()
 			e.Buffer().MoveCursor(cursor.ID(), 0, 0)
 			e.HandleCursorMovement()
@@ -26,14 +26,14 @@ func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager) *NormalMod
 
 	// Undo command
 	kt.Add([]string{"u"}, keytree.KeyAction{
-		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+		Execute: func(e types.Editor) (types.Editor, tea.Cmd) {
 			return history.Undo(e)
 		},
 	})
 
 	// Redo command
 	kt.Add([]string{"ctrl+r"}, keytree.KeyAction{
-		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+		Execute: func(e types.Editor) (types.Editor, tea.Cmd) {
 			return history.Redo(e)
 		},
 	})
@@ -110,7 +110,7 @@ func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager) *NormalMod
 	}
 }
 
-func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd) {
+func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 
 	// Handle key sequences
 	if handled, model, cmd := h.keytree.Handle(msg.String(), e); handled {

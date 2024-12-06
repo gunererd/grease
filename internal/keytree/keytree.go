@@ -9,7 +9,7 @@ import (
 
 // KeyAction represents what to do when a key sequence is matched
 type KeyAction struct {
-	Execute func(e types.Editor) (tea.Model, tea.Cmd)
+	Execute func(e types.Editor) (types.Editor, tea.Cmd)
 }
 
 // KeyNode represents a node in tree
@@ -52,7 +52,7 @@ func (kt *KeyTree) Add(sequence []string, action KeyAction) {
 
 // handled: true if the key was consumed as part of a sequence (whether complete or partial)
 // handled: false if the key doesn't match any sequence
-func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model tea.Model, cmd tea.Cmd) {
+func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types.Editor, cmd tea.Cmd) {
 	now := time.Now()
 
 	// Reset if timeout exceeded

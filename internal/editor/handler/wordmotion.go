@@ -108,7 +108,7 @@ func NewMotionCommand(motion Motion, operation Operation) *MotionCommand {
 	}
 }
 
-func (mc *MotionCommand) Execute(e types.Editor) (tea.Model, tea.Cmd) {
+func (mc *MotionCommand) Execute(e types.Editor) (types.Editor, tea.Cmd) {
 	buf := e.Buffer()
 	cursor, _ := buf.GetPrimaryCursor()
 	curPos := cursor.GetPosition()
@@ -124,21 +124,21 @@ func (mc *MotionCommand) Execute(e types.Editor) (tea.Model, tea.Cmd) {
 }
 
 // Factory function for word motion commands
-func CreateWordMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (tea.Model, tea.Cmd) {
+func CreateWordMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
 	motion := NewWordMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
 }
 
 // Factory function for word end motion commands
-func CreateWordEndMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (tea.Model, tea.Cmd) {
+func CreateWordEndMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
 	motion := NewWordEndMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
 }
 
 // Factory function for word back motion commands
-func CreateWordBackMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (tea.Model, tea.Cmd) {
+func CreateWordBackMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
 	motion := NewWordBackMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
