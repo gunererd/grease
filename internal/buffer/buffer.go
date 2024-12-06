@@ -513,6 +513,85 @@ func (b *Buffer) ReplaceLine(line int, content string) error {
 	return nil
 }
 
+// InsertLine inserts a new line at the specified position
+func (b *Buffer) InsertLine(line int, content string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	// Validate line number
+	if line < 0 || line > len(b.lines) {
+		return ErrInvalidLine
+	}
+
+	// Convert content string to runes
+	newLine := []rune(content)
+
+	// Insert the new line at the specified position
+	b.lines = append(b.lines[:line], append([][]rune{newLine}, b.lines[line:]...)...)
+
+	// Update cursor positions after the insertion point
+	for _, cursor := range b.cursors {
+		cursorPos := cursor.GetPosition()
+		if cursorPos.Line() >= line {
+			cursor.SetPosition(NewPosition(cursorPos.Line()+1, cursorPos.Column()))
+		}
+	}
+
+	return nil
+}
+
+// RemoveLine removes the line at the specified position
+func (b *Buffer) RemoveLine(line int) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	// Validate line number
+	if line < 0 || line >= len(b.lines) {
+		return ErrInvalidLine
+	}
+
+	// Don't allow removing the last line
+	if len(b.lines) == 1 {
+		b.lines[0] = []rune{} // Clear the last line instead of removing it
+		return nil
+	}
+
+	// Remove the line
+	b.lines = append(b.lines[:line], b.lines[line+1:]...)
+
+	// Update cursor positions after the removal point
+	for _, cursor := range b.cursors {
+		cursorPos := cursor.GetPosition()
+		if cursorPos.Line() > line {
+			// Move cursor up one line
+			newLine := cursorPos.Line() - 1
+			newColumn := cursorPos.Column()
+			
+			// Ensure cursor column is valid in the new line
+			if newLine >= 0 && newLine < len(b.lines) {
+				lineLen := len(b.lines[newLine])
+				if newColumn > lineLen {
+					newColumn = lineLen
+				}
+			}
+			
+			cursor.SetPosition(NewPosition(newLine, newColumn))
+		} else if cursorPos.Line() == line {
+			// If cursor was on the removed line, move it to the end of the previous line
+			// or the start of the next line
+			if line > 0 {
+				newLine := line - 1
+				newColumn := len(b.lines[newLine])
+				cursor.SetPosition(NewPosition(newLine, newColumn))
+			} else if len(b.lines) > 0 {
+				cursor.SetPosition(NewPosition(0, 0))
+			}
+		}
+	}
+
+	return nil
+}
+
 // validatePosition checks if a position is valid within the buffer
 func (b *Buffer) validatePosition(pos types.Position) error {
 	if pos.Line() < 0 || pos.Line() >= len(b.lines) {

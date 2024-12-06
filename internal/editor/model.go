@@ -24,6 +24,7 @@ type Editor struct {
 	statusLine       types.StatusLine
 	handlers         map[state.Mode]handler.ModeHandler
 	highlightManager types.HighlightManager
+	historyManager   types.HistoryManager
 }
 
 func New(
@@ -31,8 +32,9 @@ func New(
 	b types.Buffer,
 	sl types.StatusLine,
 	wp types.Viewport,
-	hm types.HighlightManager,
+	hlm types.HighlightManager,
 	kt *keytree.KeyTree,
+	hm types.HistoryManager,
 ) *Editor {
 	e := &Editor{
 		buffer:          b,
@@ -42,12 +44,13 @@ func New(
 		showLineNumbers: true,
 		statusLine:      sl,
 		handlers: map[state.Mode]handler.ModeHandler{
-			state.NormalMode:  handler.NewNormalMode(kt),
+			state.NormalMode:  handler.NewNormalMode(kt, hm),
 			state.InsertMode:  handler.NewInsertMode(),
-			state.VisualMode:  handler.NewVisualMode(kt),
+			state.VisualMode:  handler.NewVisualMode(kt, hm),
 			state.CommandMode: handler.NewCommandMode(),
 		},
-		highlightManager: hm,
+		highlightManager: hlm,
+		historyManager:   hm,
 	}
 	return e
 }
@@ -70,6 +73,10 @@ func (e *Editor) Viewport() types.Viewport {
 
 func (e *Editor) HighlightManager() types.HighlightManager {
 	return e.highlightManager
+}
+
+func (e *Editor) HistoryManager() types.HistoryManager {
+	return e.historyManager
 }
 
 func (e *Editor) Init() tea.Cmd {

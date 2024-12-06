@@ -15,7 +15,7 @@ type VisualMode struct {
 	highlightID    int
 }
 
-func NewVisualMode(kt *keytree.KeyTree) *VisualMode {
+func NewVisualMode(kt *keytree.KeyTree, hm types.HistoryManager) *VisualMode {
 	return &VisualMode{
 		highlightID: -1, // Invalid highlight ID
 	}

@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/editor"
+	"github.com/gunererd/grease/internal/editor/handler"
 	"github.com/gunererd/grease/internal/highlight"
 	ioManager "github.com/gunererd/grease/internal/io"
 	"github.com/gunererd/grease/internal/keytree"
@@ -41,7 +42,8 @@ func main() {
 	statusLine := ui.NewStatusLine()
 	viewport := ui.NewViewport(0, 0)
 	viewport.SetHighlightManager(highlightManager)
-	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt)
+	historyManager := handler.NewHistoryManager(100)
+	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, historyManager)
 
 	// Load content from stdin if it's not a terminal
 	stat, _ := os.Stdin.Stat()

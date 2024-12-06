@@ -9,9 +9,10 @@ import (
 
 type NormalMode struct {
 	keytree *keytree.KeyTree
+	history types.HistoryManager
 }
 
-func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
+func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager) *NormalMode {
 
 	// Vim style Jump to beginning of buffer
 	kt.Add([]string{"g", "g"}, keytree.KeyAction{
@@ -23,50 +24,64 @@ func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
 		},
 	})
 
+	// Undo command
+	kt.Add([]string{"u"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			return history.Undo(e)
+		},
+	})
+
+	// Redo command
+	kt.Add([]string{"ctrl+r"}, keytree.KeyAction{
+		Execute: func(e types.Editor) (tea.Model, tea.Cmd) {
+			return history.Redo(e)
+		},
+	})
+
 	// Word motion commands - change
 	kt.Add([]string{"c", "w"}, keytree.KeyAction{
-		Execute: CreateWordMotionCommand(false, NewChangeOperation()),
+		Execute: CreateWordMotionCommand(false, NewHistoryAwareOperation(NewChangeOperation(), history)),
 	})
 	kt.Add([]string{"c", "W"}, keytree.KeyAction{
-		Execute: CreateWordMotionCommand(true, NewChangeOperation()),
+		Execute: CreateWordMotionCommand(true, NewHistoryAwareOperation(NewChangeOperation(), history)),
 	})
 
 	kt.Add([]string{"c", "e"}, keytree.KeyAction{
-		Execute: CreateWordEndMotionCommand(false, NewChangeOperation()),
+		Execute: CreateWordEndMotionCommand(false, NewHistoryAwareOperation(NewChangeOperation(), history)),
 	})
 
 	kt.Add([]string{"c", "E"}, keytree.KeyAction{
-		Execute: CreateWordEndMotionCommand(true, NewChangeOperation()),
+		Execute: CreateWordEndMotionCommand(true, NewHistoryAwareOperation(NewChangeOperation(), history)),
 	})
 
 	kt.Add([]string{"c", "b"}, keytree.KeyAction{
-		Execute: CreateWordBackMotionCommand(false, NewChangeOperation()),
+		Execute: CreateWordBackMotionCommand(false, NewHistoryAwareOperation(NewChangeOperation(), history)),
 	})
 	kt.Add([]string{"c", "B"}, keytree.KeyAction{
-		Execute: CreateWordBackMotionCommand(true, NewChangeOperation()),
+		Execute: CreateWordBackMotionCommand(true, NewHistoryAwareOperation(NewChangeOperation(), history)),
 	})
 
 	// Word motion commands - delete
 	kt.Add([]string{"d", "w"}, keytree.KeyAction{
-		Execute: CreateWordMotionCommand(false, NewDeleteOperation()),
+		Execute: CreateWordMotionCommand(false, NewHistoryAwareOperation(NewDeleteOperation(), history)),
 	})
 	kt.Add([]string{"d", "W"}, keytree.KeyAction{
-		Execute: CreateWordMotionCommand(true, NewDeleteOperation()),
+		Execute: CreateWordMotionCommand(true, NewHistoryAwareOperation(NewDeleteOperation(), history)),
 	})
 
 	kt.Add([]string{"d", "e"}, keytree.KeyAction{
-		Execute: CreateWordEndMotionCommand(false, NewDeleteOperation()),
+		Execute: CreateWordEndMotionCommand(false, NewHistoryAwareOperation(NewDeleteOperation(), history)),
 	})
 
 	kt.Add([]string{"d", "E"}, keytree.KeyAction{
-		Execute: CreateWordEndMotionCommand(true, NewDeleteOperation()),
+		Execute: CreateWordEndMotionCommand(true, NewHistoryAwareOperation(NewDeleteOperation(), history)),
 	})
 
 	kt.Add([]string{"d", "b"}, keytree.KeyAction{
-		Execute: CreateWordBackMotionCommand(false, NewDeleteOperation()),
+		Execute: CreateWordBackMotionCommand(false, NewHistoryAwareOperation(NewDeleteOperation(), history)),
 	})
 	kt.Add([]string{"d", "B"}, keytree.KeyAction{
-		Execute: CreateWordBackMotionCommand(true, NewDeleteOperation()),
+		Execute: CreateWordBackMotionCommand(true, NewHistoryAwareOperation(NewDeleteOperation(), history)),
 	})
 
 	// Word motion commands - yank
@@ -91,6 +106,7 @@ func NewNormalMode(kt *keytree.KeyTree) *NormalMode {
 
 	return &NormalMode{
 		keytree: kt,
+		history: history,
 	}
 }
 
@@ -176,11 +192,11 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (tea.Model, tea.Cmd)
 		e.HandleCursorMovement()
 		return model, cmd
 	case "p":
-		model, cmd := NewPasteOperation(false).Execute(e, cursor.GetPosition(), cursor.GetPosition())
+		model, cmd := NewHistoryAwareOperation(NewPasteOperation(false), e.HistoryManager()).Execute(e, cursor.GetPosition(), cursor.GetPosition())
 		e.HandleCursorMovement()
 		return model, cmd
 	case "P":
-		model, cmd := NewPasteOperation(true).Execute(e, cursor.GetPosition(), cursor.GetPosition())
+		model, cmd := NewHistoryAwareOperation(NewPasteOperation(true), e.HistoryManager()).Execute(e, cursor.GetPosition(), cursor.GetPosition())
 		e.HandleCursorMovement()
 		return model, cmd
 	}

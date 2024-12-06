@@ -24,9 +24,23 @@ func NewDeleteOperation() *DeleteOperation {
 func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (tea.Model, tea.Cmd) {
 	buf := e.Buffer()
 	if from.Line() == to.Line() {
+		// Single line deletion
 		line, _ := buf.GetLine(from.Line())
 		newLine := line[:from.Column()] + line[to.Column():]
 		buf.ReplaceLine(from.Line(), newLine)
+	} else {
+		// Multi-line deletion
+		firstLine, _ := buf.GetLine(from.Line())
+		lastLine, _ := buf.GetLine(to.Line())
+
+		// Combine first and last line
+		newLine := firstLine[:from.Column()] + lastLine[to.Column():]
+		buf.ReplaceLine(from.Line(), newLine)
+
+		// Remove lines in between
+		for i := from.Line() + 1; i <= to.Line(); i++ {
+			buf.RemoveLine(from.Line() + 1)
+		}
 	}
 	return e, nil
 }
@@ -130,14 +144,14 @@ func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (tea.M
 
 		// Insert middle lines
 		for i := 1; i < len(lines)-1; i++ {
-			buf.ReplaceLine(from.Line()+i, lines[i])
+			buf.InsertLine(from.Line()+i, lines[i])
 		}
 
 		// Handle last line
 		lastLine := lines[len(lines)-1] + currentLine[insertPos:]
-		buf.ReplaceLine(from.Line()+len(lines)-1, lastLine)
+		buf.InsertLine(from.Line()+len(lines)-1, lastLine)
 
-		// Move cursor to start of pasted text
+		// Move cursor to end of pasted text
 		buf.MoveCursor(cursor.ID(), from.Line()+len(lines)-1, len(lines[len(lines)-1]))
 	}
 
