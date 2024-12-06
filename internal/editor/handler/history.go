@@ -131,12 +131,12 @@ func (h *HistoryManager) Redo(e types.Editor) (types.Editor, tea.Cmd) {
 
 // HistoryAwareOperation wraps an Operation with history tracking
 type HistoryAwareOperation struct {
-	operation Operation
+	operation types.Operation
 	history   types.HistoryManager
 }
 
 // NewHistoryAwareOperation creates a new history-aware wrapper around an operation
-func NewHistoryAwareOperation(op Operation, history types.HistoryManager) *HistoryAwareOperation {
+func NewHistoryAwareOperation(op types.Operation, history types.HistoryManager) *HistoryAwareOperation {
 	return &HistoryAwareOperation{
 		operation: op,
 		history:   history,
@@ -144,7 +144,7 @@ func NewHistoryAwareOperation(op Operation, history types.HistoryManager) *Histo
 }
 
 // getOperationType returns a string identifier for the operation type
-func getOperationType(op Operation) string {
+func getOperationType(op types.Operation) string {
 	switch op.(type) {
 	case *DeleteOperation:
 		return "delete"

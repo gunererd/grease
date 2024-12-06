@@ -9,15 +9,10 @@ import (
 	"github.com/gunererd/grease/internal/types"
 )
 
-// Operation defines what actions can be performed between two positions in a buffer
-type Operation interface {
-	Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd)
-}
-
 // DeleteOperation implements deletion of text between two positions
 type DeleteOperation struct{}
 
-func NewDeleteOperation() *DeleteOperation {
+func NewDeleteOperation() types.Operation {
 	return &DeleteOperation{}
 }
 
@@ -47,10 +42,10 @@ func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (type
 
 // ChangeOperation implements change operation (delete + enter insert mode)
 type ChangeOperation struct {
-	*DeleteOperation
+	DeleteOperation types.Operation
 }
 
-func NewChangeOperation() *ChangeOperation {
+func NewChangeOperation() types.Operation {
 	return &ChangeOperation{
 		DeleteOperation: NewDeleteOperation(),
 	}
@@ -63,10 +58,14 @@ func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) (type
 }
 
 // YankOperation implements copying of text between two positions
-type YankOperation struct{}
+type YankOperation struct {
+	Operation types.Operation
+}
 
-func NewYankOperation() *YankOperation {
-	return &YankOperation{}
+func NewYankOperation() types.Operation {
+	return &YankOperation{
+		Operation: NewDeleteOperation(),
+	}
 }
 
 func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
@@ -101,7 +100,7 @@ type PasteOperation struct {
 	before bool // If true, paste before cursor
 }
 
-func NewPasteOperation(before bool) *PasteOperation {
+func NewPasteOperation(before bool) types.Operation {
 	return &PasteOperation{before: before}
 }
 

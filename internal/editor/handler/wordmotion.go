@@ -98,10 +98,10 @@ func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Posi
 // MotionCommand combines a motion with an optional operation
 type MotionCommand struct {
 	motion    Motion
-	operation Operation
+	operation types.Operation
 }
 
-func NewMotionCommand(motion Motion, operation Operation) *MotionCommand {
+func NewMotionCommand(motion Motion, operation types.Operation) *MotionCommand {
 	return &MotionCommand{
 		motion:    motion,
 		operation: operation,
@@ -124,21 +124,21 @@ func (mc *MotionCommand) Execute(e types.Editor) (types.Editor, tea.Cmd) {
 }
 
 // Factory function for word motion commands
-func CreateWordMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
+func CreateWordMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
 	motion := NewWordMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
 }
 
 // Factory function for word end motion commands
-func CreateWordEndMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
+func CreateWordEndMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
 	motion := NewWordEndMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
 }
 
 // Factory function for word back motion commands
-func CreateWordBackMotionCommand(bigWord bool, operation Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
+func CreateWordBackMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
 	motion := NewWordBackMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
