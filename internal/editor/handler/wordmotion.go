@@ -80,21 +80,18 @@ func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Posi
 	return buffer.NewPosition(pos.Line(), col)
 }
 
-// Helper function to move to the next big word (whitespace)
 func moveToNextBigWord(runes []rune, col int) int {
 	col = skipWhile(runes, col, isWordChar)
 	col = skipWhile(runes, col, func(r rune) bool { return !isWordChar(r) })
 	return col
 }
 
-// Helper function to move to the next word
 func moveToNextWord(runes []rune, col int) int {
 	col = skipWhile(runes, col, isWordChar)
 	col = skipWhile(runes, col, isWhitespace)
 	return col
 }
 
-// Helper function to skip characters while the predicate function returns true
 func skipWhile(runes []rune, start int, predicate func(r rune) bool) int {
 	for start < len(runes) && predicate(runes[start]) {
 		start++
@@ -179,33 +176,66 @@ func (wm *WordEndMotion) Calculate(buf types.Buffer, pos types.Position) types.P
 	runes := []rune(line)
 	col := pos.Column()
 
-	// If we're at the end of the current line, try to move to the next line
-	if col >= len(runes) {
-		nextLine := pos.Line() + 1
-		if nextLine < buf.LineCount() {
-			return buffer.NewPosition(nextLine, 0)
+	// Return current position if buffer or line is empty or line has only one character
+	if len(runes) == 0 || len(runes) == 1 {
+		return pos
+	}
+
+	if col >= len(runes)-1 {
+		pos := moveToNextLine(buf, pos)
+		line, _ := buf.GetLine(pos.Line())
+		runes = []rune(line)
+		if len(runes) > 0 {
+			return wm.Calculate(buf, pos)
 		}
 		return pos
 	}
 
 	if wm.bigWord {
-		// For 'E', move to end of current WORD
-		for col < len(runes)-1 && !isWhitespace(runes[col+1]) {
-			col++
-		}
+		col = moveToNextBigWordEnd(runes, col)
 	} else {
-		// For 'e', handle word characters and punctuation separately
-		if col < len(runes)-1 {
-			startType := getCharType(runes[col+1])
-			col++
-			// Move to the last character of the current word
-			for col < len(runes)-1 && getCharType(runes[col+1]) == startType {
-				col++
-			}
-		}
+		col = moveToNextWordEnd(runes, col)
+	}
+
+	if col >= len(runes) {
+		return moveToNextLine(buf, pos)
 	}
 
 	return buffer.NewPosition(pos.Line(), col)
+}
+
+func moveToNextWordEnd(runes []rune, col int) int {
+	if col >= len(runes) {
+		return col
+	}
+
+	startType := getCharType(runes[col])
+	col = skipWhile(runes, col, func(r rune) bool { return getCharType(r) == startType })
+	col = skipWhile(runes, col, isWordChar)
+
+	// Adjust position if moving into non-word character after whitespace
+	if col > 0 && col < len(runes) && isWhitespace(runes[col-1]) && !isWhitespace(runes[col]) && !isWordChar(runes[col]) {
+		return col
+	}
+
+	return max(col-1, 0)
+}
+
+func moveToNextBigWordEnd(runes []rune, col int) int {
+	if col >= len(runes) {
+		return col
+	}
+
+	startType := getCharType(runes[col])
+	col = skipWhile(runes, col, func(r rune) bool { return getCharType(r) == startType })
+	col = skipWhile(runes, col, func(r rune) bool { return !isWhitespace(r) })
+
+	// Adjust position if moving into non-big-word character after whitespace
+	if col > 0 && col < len(runes) && isWhitespace(runes[col-1]) && !isWhitespace(runes[col]) && !isWordChar(runes[col]) {
+		return col
+	}
+
+	return max(col-1, 0)
 }
 
 // WordBackMotion implements Motion for word backward movements
