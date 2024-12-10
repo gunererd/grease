@@ -21,7 +21,7 @@ func NewPosition(line, column int) Position {
 
 // String returns a string representation of the position
 func (p Position) String() string {
-	return fmt.Sprintf("%d:%d", p.line+1, p.column+1)
+	return fmt.Sprintf("%d:%d", p.line, p.column)
 }
 
 // Before returns true if this position is before other position
