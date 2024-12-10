@@ -49,50 +49,71 @@ func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Posi
 	runes := []rune(line)
 	col := pos.Column()
 
-	// If we're at the end of the current line, try to move to the next line
-	if col >= len(runes) {
-		nextLine := pos.Line() + 1
-		if nextLine < buf.LineCount() {
-			return buffer.NewPosition(nextLine, 0)
-		}
+	// Return current position if buffer or line is empty
+	if len(runes) == 0 {
 		return pos
 	}
 
-	if wm.bigWord {
-		// For 'W', move to next non-whitespace after whitespace
-		// Skip non-whitespace
-		for col < len(runes) && !isWhitespace(runes[col]) {
-			col++
-		}
-		// Skip whitespace
-		for col < len(runes) && isWhitespace(runes[col]) {
-			col++
-		}
-	} else {
-		// For 'w', handle word characters and punctuation separately
-		if col < len(runes) {
-			startType := getCharType(runes[col])
-			col++
-			// Skip characters of the same type
-			for col < len(runes) && getCharType(runes[col]) == startType {
-				col++
-			}
-			// Skip any whitespace
-			for col < len(runes) && isWhitespace(runes[col]) {
-				col++
-			}
-		}
+	// If we're at the end of the current line, try to move to the next line
+	if col >= len(runes) {
+		return moveToNextLine(buf, pos)
 	}
 
-	// If we reached the end of line, move to the start of next line
+	if wm.bigWord {
+		col = moveToNextBigWord(runes, col)
+	} else {
+		col = moveToNextWord(runes, col)
+	}
+
 	if col >= len(runes) {
-		nextLine := pos.Line() + 1
-		if nextLine < buf.LineCount() {
-			return buffer.NewPosition(nextLine, 0)
+		pos := moveToNextLine(buf, pos)
+		// If first character of next line is not a word character, return current position
+		line, _ := buf.GetLine(pos.Line())
+		runes = []rune(line)
+		if !isWordChar(runes[0]) {
+			return wm.Calculate(buf, pos)
 		}
+
+		return pos
 	}
 
 	return buffer.NewPosition(pos.Line(), col)
+}
+
+// Helper function to move to the next big word (whitespace)
+func moveToNextBigWord(runes []rune, col int) int {
+	col = skipWhile(runes, col, isWordChar)
+	col = skipWhile(runes, col, func(r rune) bool { return !isWordChar(r) })
+	return col
+}
+
+// Helper function to move to the next word
+func moveToNextWord(runes []rune, col int) int {
+	col = skipWhile(runes, col, isWordChar)
+	col = skipWhile(runes, col, isWhitespace)
+	return col
+}
+
+// Helper function to skip characters while the predicate function returns true
+func skipWhile(runes []rune, start int, predicate func(r rune) bool) int {
+	for start < len(runes) && predicate(runes[start]) {
+		start++
+	}
+	return start
+}
+
+// Function to move to the next line or move to end of line if at the end
+func moveToNextLine(buf types.Buffer, pos types.Position) types.Position {
+	nextLine := pos.Line() + 1
+	if nextLine < buf.LineCount() {
+		return buffer.NewPosition(nextLine, 0)
+	}
+	line, err := buf.GetLine(pos.Line())
+	if err != nil {
+		return pos
+	}
+
+	return buffer.NewPosition(pos.Line(), len(line)-1)
 }
 
 // MotionCommand combines a motion with an optional operation
