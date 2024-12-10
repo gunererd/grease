@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"sort"
 	"sync"
-	"unicode/utf8"
 
 	"github.com/gunererd/grease/internal/types"
 )
@@ -38,35 +37,6 @@ func New() *Buffer {
 	}
 	// Create primary cursor at start of buffer
 	b.AddCursor(NewPosition(0, 0), 100) // Primary cursor gets high priority
-	return b
-}
-
-// NewFromString creates a buffer from a string
-func NewFromString(content string) *Buffer {
-	b := &Buffer{}
-	if content == "" {
-		b.lines = [][]rune{{}}
-	} else {
-		var lines [][]rune
-		currentLine := make([]rune, 0, 128)
-
-		for len(content) > 0 {
-			r, size := utf8.DecodeRuneInString(content)
-			content = content[size:]
-
-			if r == '\n' {
-				lines = append(lines, currentLine)
-				currentLine = make([]rune, 0, 128)
-			} else {
-				currentLine = append(currentLine, r)
-			}
-		}
-		lines = append(lines, currentLine)
-		b.lines = lines
-	}
-
-	// Create primary cursor at start of buffer
-	b.AddCursor(NewPosition(0, 0), 100)
 	return b
 }
 
