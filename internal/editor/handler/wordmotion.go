@@ -103,8 +103,7 @@ func skipWhile(runes []rune, start int, predicate func(r rune) bool) int {
 // Function to move to the next line or move to end of line if at the end
 func moveToNextLine(buf types.Buffer, pos types.Position) types.Position {
 	nextLine := pos.Line() + 1
-	linecount := buf.LineCount()
-	if nextLine < linecount {
+	if nextLine < buf.LineCount() {
 		return buffer.NewPosition(nextLine, 0)
 	}
 	line, err := buf.GetLine(pos.Line())
@@ -249,47 +248,104 @@ func NewWordBackMotion(bigWord bool) *WordBackMotion {
 	return &WordBackMotion{bigWord: bigWord}
 }
 
-func (wm *WordBackMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
+func (wbm *WordBackMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
 	line, _ := buf.GetLine(pos.Line())
 	runes := []rune(line)
 	col := pos.Column()
 
-	// If we're at the start of the current line, try to move to the previous line
+	// If we're at the start of the line, move to previous line
 	if col <= 0 {
-		prevLine := pos.Line() - 1
-		if prevLine >= 0 {
-			prevLineLen, _ := buf.LineLen(prevLine)
-			return buffer.NewPosition(prevLine, prevLineLen)
+		prevPos := moveToPrevLine(buf, pos)
+		if prevPos.Line() == pos.Line() {
+			return pos // We couldn't move to previous line
 		}
-		return pos
+
+		line, _ := buf.GetLine(prevPos.Line())
+		runes = []rune(line)
+		if !isWhitespace(runes[prevPos.Column()]) && !isWordChar(runes[prevPos.Column()]) {
+			return prevPos
+		}
+
+		return wbm.Calculate(buf, prevPos)
 	}
 
-	if wm.bigWord {
-		// For 'B', move backward to start of current WORD
-		// Skip whitespace
-		for col > 0 && isWhitespace(runes[col-1]) {
-			col--
-		}
-		// Move to start of current WORD
-		for col > 0 && !isWhitespace(runes[col-1]) {
-			col--
-		}
+	if wbm.bigWord {
+		col = moveToPrevBigWord(runes, col)
 	} else {
-		// For 'b', handle word characters and punctuation separately
-		if col > 0 {
-			// Skip whitespace
-			for col > 0 && isWhitespace(runes[col-1]) {
-				col--
-			}
-			if col > 0 {
-				startType := getCharType(runes[col-1])
-				// Move to start of current word
-				for col > 0 && getCharType(runes[col-1]) == startType {
-					col--
-				}
-			}
-		}
+		col = moveToPrevWord(runes, col)
+	}
+
+	if col == 0 && !isWhitespace(runes[col]) {
+		return buffer.NewPosition(pos.Line(), col)
+
+	}
+
+	if col == 0 && pos.Line() > 0 {
+		return wbm.Calculate(buf, buffer.NewPosition(pos.Line(), col))
 	}
 
 	return buffer.NewPosition(pos.Line(), col)
+}
+
+func moveToPrevLine(buf types.Buffer, pos types.Position) types.Position {
+	prevLine := pos.Line() - 1
+	if prevLine >= 0 {
+		line, err := buf.GetLine(prevLine)
+		if err != nil {
+			return pos
+		}
+		return buffer.NewPosition(prevLine, len([]rune(line))-1)
+	}
+	return buffer.NewPosition(pos.Line(), 0)
+}
+
+func moveToPrevWord(runes []rune, col int) int {
+	if col <= 0 {
+		return col
+	}
+
+	// If we're in whitespace, skip it
+	col = skipBackWhile(runes, col, isWhitespace)
+	if col == 0 {
+		return col
+	}
+
+	// Get the type of character we're currently on
+	startType := getCharType(runes[col-1])
+
+	// Skip characters of the same type
+	col = skipBackWhile(runes, col, func(r rune) bool { return getCharType(r) == startType })
+
+	return col
+}
+
+func moveToPrevBigWord(runes []rune, col int) int {
+	if col <= 0 {
+		return col
+	}
+
+	// Skip trailing whitespace
+	col = skipBackWhile(runes, col, isWhitespace)
+	if col == 0 {
+		return col
+	}
+
+	// Skip non-whitespace characters
+	col = skipBackWhile(runes, col, func(r rune) bool { return !isWhitespace(r) })
+
+	return col
+}
+
+func skipBackWhile(runes []rune, start int, predicate func(r rune) bool) int {
+	for start > 0 && predicate(runes[start-1]) {
+		start--
+	}
+	return start
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
