@@ -49,13 +49,13 @@ func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Posi
 	runes := []rune(line)
 	col := pos.Column()
 
-	// Return current position if buffer or line is empty
-	if len(runes) == 0 {
+	// Return current position if buffer or line is empty or line has only one character
+	if len(runes) == 0 || len(runes) == 1 {
 		return pos
 	}
 
 	// If we're at the end of the current line, try to move to the next line
-	if col >= len(runes) {
+	if col >= len(runes)-1 {
 		return moveToNextLine(buf, pos)
 	}
 
@@ -70,7 +70,7 @@ func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Posi
 		// If first character of next line is not a word character, return current position
 		line, _ := buf.GetLine(pos.Line())
 		runes = []rune(line)
-		if !isWordChar(runes[0]) {
+		if len(runes) > 0 && !isWordChar(runes[0]) {
 			return wm.Calculate(buf, pos)
 		}
 
@@ -87,6 +87,7 @@ func moveToNextBigWord(runes []rune, col int) int {
 }
 
 func moveToNextWord(runes []rune, col int) int {
+	col = skipWhile(runes, col, func(r rune) bool { return !isWhitespace(r) && !isWordChar(r) })
 	col = skipWhile(runes, col, isWordChar)
 	col = skipWhile(runes, col, isWhitespace)
 	return col
@@ -102,7 +103,8 @@ func skipWhile(runes []rune, start int, predicate func(r rune) bool) int {
 // Function to move to the next line or move to end of line if at the end
 func moveToNextLine(buf types.Buffer, pos types.Position) types.Position {
 	nextLine := pos.Line() + 1
-	if nextLine < buf.LineCount() {
+	linecount := buf.LineCount()
+	if nextLine < linecount {
 		return buffer.NewPosition(nextLine, 0)
 	}
 	line, err := buf.GetLine(pos.Line())
