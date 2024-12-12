@@ -44,10 +44,9 @@ func New(
 		showLineNumbers: true,
 		statusLine:      sl,
 		handlers: map[state.Mode]types.ModeHandler{
-			state.NormalMode:  handler.NewNormalMode(kt, hm),
-			state.InsertMode:  handler.NewInsertMode(),
-			state.VisualMode:  handler.NewVisualMode(kt, hm),
-			state.CommandMode: handler.NewCommandMode(),
+			state.NormalMode: handler.NewNormalMode(kt, hm),
+			state.InsertMode: handler.NewInsertMode(),
+			state.VisualMode: handler.NewVisualMode(kt, hm),
 		},
 		highlightManager: hlm,
 		historyManager:   hm,
