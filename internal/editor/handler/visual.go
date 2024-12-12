@@ -15,16 +15,24 @@ type VisualMode struct {
 	selectionStart   types.Position
 	highlightID      int
 	operationManager types.OperationManager
+	keytree          *keytree.KeyTree
 }
 
 func NewVisualMode(kt *keytree.KeyTree, hm types.HistoryManager, om types.OperationManager) *VisualMode {
+
+	kt.Add([]string{"g", "g"}, keytree.KeyAction{
+		Execute: motion.CreateBasicMotionCommand(motion.NewStartOfBufferMotion()),
+	})
+
 	return &VisualMode{
 		highlightID:      -1, // Invalid highlight ID
 		operationManager: om,
+		keytree:          kt,
 	}
 }
 
 func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
+
 	cursor, err := e.Buffer().GetPrimaryCursor()
 	if err != nil {
 		return e, nil
@@ -41,6 +49,13 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		}
 	}
 
+	// Handle key sequences
+	if handled, model := vm.keytree.Handle(msg.String(), e); handled {
+		vm.updateHighlight(cursor, e.HighlightManager())
+		e.HandleCursorMovement()
+		return model, nil
+	}
+
 	var model types.Editor = e
 	var cmd tea.Cmd
 	switch msg.String() {
@@ -52,13 +67,17 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		}
 		e.SetMode(state.NormalMode)
 	case "h":
-		return motion.CreateBasicMotionCommand(motion.NewLeftMotion())(e), nil
+		model = motion.CreateBasicMotionCommand(motion.NewLeftMotion())(e)
 	case "l":
-		return motion.CreateBasicMotionCommand(motion.NewRightMotion())(e), nil
+		model = motion.CreateBasicMotionCommand(motion.NewRightMotion())(e)
 	case "j":
-		return motion.CreateBasicMotionCommand(motion.NewDownMotion())(e), nil
+		model = motion.CreateBasicMotionCommand(motion.NewDownMotion())(e)
 	case "k":
-		return motion.CreateBasicMotionCommand(motion.NewUpMotion())(e), nil
+		model = motion.CreateBasicMotionCommand(motion.NewUpMotion())(e)
+	case "gg":
+		model = motion.CreateBasicMotionCommand(motion.NewStartOfBufferMotion())(e)
+	case "G":
+		model = motion.CreateBasicMotionCommand(motion.NewEndOfBufferMotion())(e)
 	case "i":
 		// Clear highlight when entering insert mode
 		if vm.highlightID != -1 {
@@ -94,18 +113,9 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		model = CreateWordBackMotionCommand(true, nil)(e)
 		model.HandleCursorMovement()
 	case "$":
-		// Vim style jump to end of line
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		line := cursor.GetPosition().Line()
-		lineLength, _ := e.Buffer().LineLen(line)
-		e.Buffer().MoveCursor(cursor.ID(), line, lineLength-1)
-		e.HandleCursorMovement()
+		model = motion.CreateBasicMotionCommand(motion.NewEndOfLineMotion())(e)
 	case "^", "0":
-		// Vim style jump to beginning of line
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		line := cursor.GetPosition().Line()
-		e.Buffer().MoveCursor(cursor.ID(), line, 0)
-		e.HandleCursorMovement()
+		model = motion.CreateBasicMotionCommand(motion.NewStartOfLineMotion())(e)
 	case "y":
 		model = vm.operationManager.Execute(types.OpYank, e, vm.selectionStart, cursor.GetPosition())
 		vm.cleanup(model)
@@ -121,22 +131,24 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		model.HandleCursorMovement()
 	}
 
-	// Update highlight to match current cursor position
+	vm.updateHighlight(cursor, e.HighlightManager())
+
+	return model, cmd
+}
+
+func (vm *VisualMode) updateHighlight(cursor types.Cursor, hm types.HighlightManager) {
 	if vm.highlightID != -1 {
 		currentPos := cursor.GetPosition()
 		var iposition types.Position = currentPos
-		if !e.HighlightManager().Update(
+		if !hm.Update(
 			vm.highlightID,
 			highlight.CreateVisualHighlight(vm.selectionStart, iposition),
 		) {
 			log.Printf("Failed to update visual highlight %d from %v to %v",
 				vm.highlightID, vm.selectionStart, currentPos)
-			// Reset highlight state since update failed
 			vm.highlightID = -1
 		}
 	}
-
-	return model, cmd
 }
 
 func (vm *VisualMode) cleanup(model types.Editor) {

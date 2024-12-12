@@ -17,12 +17,7 @@ func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager, om types.O
 
 	// Vim style Jump to beginning of buffer
 	kt.Add([]string{"g", "g"}, keytree.KeyAction{
-		Execute: func(e types.Editor) types.Editor {
-			cursor, _ := e.Buffer().GetPrimaryCursor()
-			e.Buffer().MoveCursor(cursor.ID(), 0, 0)
-			e.HandleCursorMovement()
-			return e
-		},
+		Execute: motion.CreateBasicMotionCommand(motion.NewStartOfBufferMotion()),
 	})
 
 	// Undo command
@@ -144,11 +139,12 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	case "q":
 		return e, tea.Quit
 	case "G":
-		// Vim style end of buffer
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		e.Buffer().MoveCursor(cursor.ID(), e.Buffer().LineCount()-1, 0)
-		e.HandleCursorMovement()
-		return e, nil
+		return motion.CreateBasicMotionCommand(motion.NewEndOfBufferMotion())(e), nil
+	case "g":
+		// Handle 'gg' sequence through keytree
+		if handled, model := h.keytree.Handle(msg.String(), e); handled {
+			return model, nil
+		}
 	case "$":
 		return motion.CreateBasicMotionCommand(motion.NewEndOfLineMotion())(e), nil
 	case "^", "0":
