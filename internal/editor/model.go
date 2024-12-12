@@ -22,7 +22,7 @@ type Editor struct {
 	io               *ioManager.Manager
 	showLineNumbers  bool
 	statusLine       types.StatusLine
-	handlers         map[state.Mode]handler.ModeHandler
+	handlers         map[state.Mode]types.ModeHandler
 	highlightManager types.HighlightManager
 	historyManager   types.HistoryManager
 }
@@ -43,7 +43,7 @@ func New(
 		io:              io,
 		showLineNumbers: true,
 		statusLine:      sl,
-		handlers: map[state.Mode]handler.ModeHandler{
+		handlers: map[state.Mode]types.ModeHandler{
 			state.NormalMode:  handler.NewNormalMode(kt, hm),
 			state.InsertMode:  handler.NewInsertMode(),
 			state.VisualMode:  handler.NewVisualMode(kt, hm),
