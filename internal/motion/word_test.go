@@ -1,4 +1,4 @@
-package handler
+package motion
 
 import (
 	"strings"
@@ -144,13 +144,9 @@ func (s *WordMotionTestSuite) TestWordMotion() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			buf := buffer.New()
-			buf.LoadFromReader(strings.NewReader(tt.input))
-
+			lines := strings.Split(tt.input, "\n")
 			motion := NewWordMotion(tt.bigWord)
-
-			result := motion.Calculate(buf, tt.pos)
-
+			result := motion.Calculate(lines, tt.pos)
 			s.Equal(tt.expected, result, "positions should match")
 		})
 	}
@@ -302,12 +298,9 @@ func (s *WordEndMotionTestSuite) TestWordEndMotion() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			buf := buffer.New()
-			buf.LoadFromReader(strings.NewReader(tt.input))
-
+			lines := strings.Split(tt.input, "\n")
 			motion := NewWordEndMotion(tt.bigWord)
-			result := motion.Calculate(buf, tt.pos)
-
+			result := motion.Calculate(lines, tt.pos)
 			s.Equal(tt.expected, result, "positions should match")
 		})
 	}
@@ -438,12 +431,9 @@ func (s *WordBackMotionTestSuite) TestWordBackMotion() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			buf := buffer.New()
-			buf.LoadFromReader(strings.NewReader(tt.input))
-
+			lines := strings.Split(tt.input, "\n")
 			motion := NewWordBackMotion(tt.bigWord)
-			result := motion.Calculate(buf, tt.pos)
-
+			result := motion.Calculate(lines, tt.pos)
 			s.Equal(tt.expected, result, "positions should match")
 		})
 	}

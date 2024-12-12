@@ -1,4 +1,4 @@
-package handler
+package motion
 
 import (
 	"regexp"
@@ -11,11 +11,6 @@ var (
 	whitespaceRegex = regexp.MustCompile(`^[\s]$`)
 	wordCharRegex   = regexp.MustCompile(`^[\p{L}\p{N}_]$`)
 )
-
-// Motion defines how to calculate target position from current position
-type Motion interface {
-	Calculate(buf types.Buffer, pos types.Position) types.Position
-}
 
 type WordMotion struct {
 	bigWord bool
@@ -43,19 +38,23 @@ func getCharType(r rune) int {
 	return 2 // punctuation/symbol
 }
 
-func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
-	line, _ := buf.GetLine(pos.Line())
+func (wm *WordMotion) Calculate(lines []string, pos types.Position) types.Position {
+	if len(lines) == 0 || pos.Line() >= len(lines) {
+		return pos
+	}
+
+	line := lines[pos.Line()]
 	runes := []rune(line)
 	col := pos.Column()
 
-	// Return current position if buffer or line is empty or line has only one character
+	// Return current position if line is empty or has only one character
 	if len(runes) == 0 || len(runes) == 1 {
 		return pos
 	}
 
 	// If we're at the end of the current line, try to move to the next line
 	if col >= len(runes)-1 {
-		return moveToNextLine(buf, pos)
+		moveToNextLine(lines, pos)
 	}
 
 	if wm.bigWord {
@@ -65,12 +64,12 @@ func (wm *WordMotion) Calculate(buf types.Buffer, pos types.Position) types.Posi
 	}
 
 	if col >= len(runes) {
-		pos := moveToNextLine(buf, pos)
+		pos := moveToNextLine(lines, pos)
 		// If first character of next line is not a word character, return current position
-		line, _ := buf.GetLine(pos.Line())
+		line := lines[pos.Line()]
 		runes = []rune(line)
 		if len(runes) > 0 && !isWordChar(runes[0]) {
-			return wm.Calculate(buf, pos)
+			return wm.Calculate(lines, pos)
 		}
 
 		return pos
@@ -100,66 +99,15 @@ func skipWhile(runes []rune, start int, predicate func(r rune) bool) int {
 }
 
 // Function to move to the next line or move to end of line if at the end
-func moveToNextLine(buf types.Buffer, pos types.Position) types.Position {
+func moveToNextLine(lines []string, pos types.Position) types.Position {
 	nextLine := pos.Line() + 1
-	if nextLine < buf.LineCount() {
+	if nextLine < len(lines) {
 		return buffer.NewPosition(nextLine, 0)
 	}
-	line, err := buf.GetLine(pos.Line())
-	if err != nil {
-		return pos
+	if pos.Line() < len(lines) {
+		return buffer.NewPosition(pos.Line(), len([]rune(lines[pos.Line()]))-1)
 	}
-
-	return buffer.NewPosition(pos.Line(), len(line)-1)
-}
-
-// MotionCommand combines a motion with an optional operation
-type MotionCommand struct {
-	motion    Motion
-	operation types.Operation
-}
-
-func NewMotionCommand(motion Motion, operation types.Operation) *MotionCommand {
-	return &MotionCommand{
-		motion:    motion,
-		operation: operation,
-	}
-}
-
-func (mc *MotionCommand) Execute(e types.Editor) types.Editor {
-	buf := e.Buffer()
-	cursor, _ := buf.GetPrimaryCursor()
-	curPos := cursor.GetPosition()
-	targetPos := mc.motion.Calculate(buf, curPos)
-
-	if mc.operation != nil {
-		return mc.operation.Execute(e, curPos, targetPos)
-	}
-
-	// If no operation, just move cursor
-	cursor.SetPosition(targetPos)
-	return e
-}
-
-// Factory function for word motion commands
-func CreateWordMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) types.Editor {
-	motion := NewWordMotion(bigWord)
-	cmd := NewMotionCommand(motion, operation)
-	return cmd.Execute
-}
-
-// Factory function for word end motion commands
-func CreateWordEndMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) types.Editor {
-	motion := NewWordEndMotion(bigWord)
-	cmd := NewMotionCommand(motion, operation)
-	return cmd.Execute
-}
-
-// Factory function for word back motion commands
-func CreateWordBackMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) types.Editor {
-	motion := NewWordBackMotion(bigWord)
-	cmd := NewMotionCommand(motion, operation)
-	return cmd.Execute
+	return pos
 }
 
 // WordEndMotion implements Motion for word end movements
@@ -171,24 +119,33 @@ func NewWordEndMotion(bigWord bool) *WordEndMotion {
 	return &WordEndMotion{bigWord: bigWord}
 }
 
-func (wm *WordEndMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
-	line, _ := buf.GetLine(pos.Line())
+func (wm *WordEndMotion) Calculate(lines []string, pos types.Position) types.Position {
+	if len(lines) == 0 || pos.Line() >= len(lines) {
+		return pos
+	}
+
+	line := lines[pos.Line()]
 	runes := []rune(line)
 	col := pos.Column()
 
-	// Return current position if buffer or line is empty or line has only one character
+	// Return current position if line is empty or has only one character
 	if len(runes) == 0 || len(runes) == 1 {
 		return pos
 	}
 
 	if col >= len(runes)-1 {
-		pos := moveToNextLine(buf, pos)
-		line, _ := buf.GetLine(pos.Line())
-		runes = []rune(line)
-		if len(runes) > 0 {
-			return wm.Calculate(buf, pos)
+		// Try to move to next line
+		nextPos := moveToNextLine(lines, pos)
+		if nextPos.Line() == pos.Line() {
+			return pos // We couldn't move to next line
 		}
-		return pos
+
+		nextLine := lines[nextPos.Line()]
+		nextRunes := []rune(nextLine)
+		if len(nextRunes) > 0 {
+			return wm.Calculate(lines, nextPos)
+		}
+		return nextPos
 	}
 
 	if wm.bigWord {
@@ -197,8 +154,8 @@ func (wm *WordEndMotion) Calculate(buf types.Buffer, pos types.Position) types.P
 		col = moveToNextWordEnd(runes, col)
 	}
 
-	if col >= len(runes) {
-		return moveToNextLine(buf, pos)
+	if col >= len(runes) && pos.Line()+1 < len(lines) {
+		return moveToNextLine(lines, pos)
 	}
 
 	return buffer.NewPosition(pos.Line(), col)
@@ -247,25 +204,29 @@ func NewWordBackMotion(bigWord bool) *WordBackMotion {
 	return &WordBackMotion{bigWord: bigWord}
 }
 
-func (wbm *WordBackMotion) Calculate(buf types.Buffer, pos types.Position) types.Position {
-	line, _ := buf.GetLine(pos.Line())
+func (wbm *WordBackMotion) Calculate(lines []string, pos types.Position) types.Position {
+	if len(lines) == 0 || pos.Line() >= len(lines) {
+		return pos
+	}
+
+	line := lines[pos.Line()]
 	runes := []rune(line)
 	col := pos.Column()
 
 	// If we're at the start of the line, move to previous line
 	if col <= 0 {
-		prevPos := moveToPrevLine(buf, pos)
+		prevPos := moveToPrevLine(lines, pos)
 		if prevPos.Line() == pos.Line() {
 			return pos // We couldn't move to previous line
 		}
 
-		line, _ := buf.GetLine(prevPos.Line())
+		line := lines[prevPos.Line()]
 		runes = []rune(line)
 		if !isWhitespace(runes[prevPos.Column()]) && !isWordChar(runes[prevPos.Column()]) {
 			return prevPos
 		}
 
-		return wbm.Calculate(buf, prevPos)
+		return wbm.Calculate(lines, prevPos)
 	}
 
 	if wbm.bigWord {
@@ -280,20 +241,16 @@ func (wbm *WordBackMotion) Calculate(buf types.Buffer, pos types.Position) types
 	}
 
 	if col == 0 && pos.Line() > 0 {
-		return wbm.Calculate(buf, buffer.NewPosition(pos.Line(), col))
+		return wbm.Calculate(lines, buffer.NewPosition(pos.Line(), col))
 	}
 
 	return buffer.NewPosition(pos.Line(), col)
 }
 
-func moveToPrevLine(buf types.Buffer, pos types.Position) types.Position {
+func moveToPrevLine(lines []string, pos types.Position) types.Position {
 	prevLine := pos.Line() - 1
 	if prevLine >= 0 {
-		line, err := buf.GetLine(prevLine)
-		if err != nil {
-			return pos
-		}
-		return buffer.NewPosition(prevLine, len([]rune(line))-1)
+		return buffer.NewPosition(prevLine, len([]rune(lines[prevLine]))-1)
 	}
 	return buffer.NewPosition(pos.Line(), 0)
 }
