@@ -24,13 +24,10 @@ func (mc *MotionCommand) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
 	cursor, _ := buf.GetPrimaryCursor()
 	curPos := cursor.GetPosition()
-
-	lines := make([]string, buf.LineCount())
-	for i := 0; i < buf.LineCount(); i++ {
-		line, _ := buf.GetLine(i)
-		lines[i] = line
-	}
-	targetPos := mc.motion.Calculate(lines, curPos)
+	targetPos := mc.motion.Calculate(
+		bufferToLines(buf),
+		curPos,
+	)
 
 	if mc.operation != nil {
 		return mc.operation.Execute(e, curPos, targetPos)
@@ -60,4 +57,13 @@ func CreateWordBackMotionCommand(bigWord bool, operation types.Operation) func(e
 	motion := motion.NewWordBackMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
+}
+
+func bufferToLines(buf types.Buffer) []string {
+	lines := make([]string, buf.LineCount())
+	for i := 0; i < buf.LineCount(); i++ {
+		line, _ := buf.GetLine(i)
+		lines[i] = line
+	}
+	return lines
 }
