@@ -2,6 +2,7 @@ package handler
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/gunererd/grease/internal/command/motion"
 	"github.com/gunererd/grease/internal/keytree"
 	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
@@ -127,17 +128,13 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	case "ctrl+c":
 		return e, tea.Quit
 	case "h":
-		e.Buffer().MoveCursorRelative(cursor.ID(), 0, -1)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewLeftMotion())(e), nil
 	case "l":
-		e.Buffer().MoveCursorRelative(cursor.ID(), 0, 1)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewRightMotion())(e), nil
 	case "j":
-		e.Buffer().MoveCursorRelative(cursor.ID(), 1, 0)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewDownMotion())(e), nil
 	case "k":
-		e.Buffer().MoveCursorRelative(cursor.ID(), -1, 0)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewUpMotion())(e), nil
 	case "i":
 		e.SetMode(state.InsertMode)
 	case "v":
@@ -153,20 +150,9 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		e.HandleCursorMovement()
 		return e, nil
 	case "$":
-		// Vim style jump to end of line
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		line := cursor.GetPosition().Line()
-		lineLength, _ := e.Buffer().LineLen(line)
-		e.Buffer().MoveCursor(cursor.ID(), line, lineLength)
-		e.HandleCursorMovement()
-		return e, nil
+		return motion.CreateBasicMotionCommand(motion.NewEndOfLineMotion())(e), nil
 	case "^", "0":
-		// Vim style jump to beginning of line
-		cursor, _ := e.Buffer().GetPrimaryCursor()
-		line := cursor.GetPosition().Line()
-		e.Buffer().MoveCursor(cursor.ID(), line, 0)
-		e.HandleCursorMovement()
-		return e, nil
+		return motion.CreateBasicMotionCommand(motion.NewStartOfLineMotion())(e), nil
 	case "w":
 		model := CreateWordMotionCommand(false, nil)(e)
 		e.HandleCursorMovement()

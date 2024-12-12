@@ -4,6 +4,7 @@ import (
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/gunererd/grease/internal/command/motion"
 	"github.com/gunererd/grease/internal/highlight"
 	"github.com/gunererd/grease/internal/keytree"
 	"github.com/gunererd/grease/internal/state"
@@ -51,17 +52,13 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		}
 		e.SetMode(state.NormalMode)
 	case "h":
-		e.Buffer().MoveCursorRelative(cursor.ID(), 0, -1)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewLeftMotion())(e), nil
 	case "l":
-		e.Buffer().MoveCursorRelative(cursor.ID(), 0, 1)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewRightMotion())(e), nil
 	case "j":
-		e.Buffer().MoveCursorRelative(cursor.ID(), 1, 0)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewDownMotion())(e), nil
 	case "k":
-		e.Buffer().MoveCursorRelative(cursor.ID(), -1, 0)
-		e.HandleCursorMovement()
+		return motion.CreateBasicMotionCommand(motion.NewUpMotion())(e), nil
 	case "i":
 		// Clear highlight when entering insert mode
 		if vm.highlightID != -1 {
