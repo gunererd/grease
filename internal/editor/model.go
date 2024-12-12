@@ -35,6 +35,7 @@ func New(
 	hlm types.HighlightManager,
 	kt *keytree.KeyTree,
 	hm types.HistoryManager,
+	om types.OperationManager,
 ) *Editor {
 	e := &Editor{
 		buffer:          b,
@@ -44,9 +45,9 @@ func New(
 		showLineNumbers: true,
 		statusLine:      sl,
 		handlers: map[state.Mode]types.ModeHandler{
-			state.NormalMode: handler.NewNormalMode(kt, hm),
+			state.NormalMode: handler.NewNormalMode(kt, hm, om),
 			state.InsertMode: handler.NewInsertMode(),
-			state.VisualMode: handler.NewVisualMode(kt, hm),
+			state.VisualMode: handler.NewVisualMode(kt, hm, om),
 		},
 		highlightManager: hlm,
 		historyManager:   hm,

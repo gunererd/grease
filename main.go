@@ -43,7 +43,8 @@ func main() {
 	viewport := ui.NewViewport(0, 0)
 	viewport.SetHighlightManager(highlightManager)
 	historyManager := handler.NewHistoryManager(100)
-	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, historyManager)
+	operationManager := handler.NewOperationManager(historyManager)
+	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, historyManager, operationManager)
 
 	// Load content from stdin if it's not a terminal
 	stat, _ := os.Stdin.Stat()

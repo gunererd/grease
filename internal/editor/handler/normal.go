@@ -12,7 +12,7 @@ type NormalMode struct {
 	history types.HistoryManager
 }
 
-func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager) *NormalMode {
+func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager, om types.OperationManager) *NormalMode {
 
 	// Vim style Jump to beginning of buffer
 	kt.Add([]string{"g", "g"}, keytree.KeyAction{

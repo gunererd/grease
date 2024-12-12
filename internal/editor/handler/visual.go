@@ -11,13 +11,15 @@ import (
 )
 
 type VisualMode struct {
-	selectionStart types.Position
-	highlightID    int
+	selectionStart   types.Position
+	highlightID      int
+	operationManager types.OperationManager
 }
 
-func NewVisualMode(kt *keytree.KeyTree, hm types.HistoryManager) *VisualMode {
+func NewVisualMode(kt *keytree.KeyTree, hm types.HistoryManager, om types.OperationManager) *VisualMode {
 	return &VisualMode{
-		highlightID: -1, // Invalid highlight ID
+		highlightID:      -1, // Invalid highlight ID
+		operationManager: om,
 	}
 }
 
@@ -108,35 +110,16 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		e.Buffer().MoveCursor(cursor.ID(), line, 0)
 		e.HandleCursorMovement()
 	case "y":
-		// Yank the selected text
-		yankOp := NewYankOperation()
-		model = yankOp.Execute(e, vm.selectionStart, cursor.GetPosition())
-
-		// Clear highlight and exit visual mode
-		if vm.highlightID != -1 {
-			e.HighlightManager().Remove(vm.highlightID)
-			vm.highlightID = -1
-		}
-		model.SetMode(state.NormalMode)
+		model = vm.operationManager.Execute(types.OpYank, e, vm.selectionStart, cursor.GetPosition())
+		vm.cleanup(model)
 	case "d":
-		deleteOp := NewHistoryAwareOperation(NewDeleteOperation(), e.HistoryManager())
-		model = deleteOp.Execute(e, vm.selectionStart, cursor.GetPosition())
-
-		if vm.highlightID != -1 {
-			e.HighlightManager().Remove(vm.highlightID)
-			vm.highlightID = -1
-		}
-		model.SetMode(state.NormalMode)
+		model = vm.operationManager.Execute(types.OpDelete, e, vm.selectionStart, cursor.GetPosition())
+		vm.cleanup(model)
 		model.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
 		model.HandleCursorMovement()
 	case "c":
-		changeOp := NewHistoryAwareOperation(NewChangeOperation(), e.HistoryManager())
-		model = changeOp.Execute(e, vm.selectionStart, cursor.GetPosition())
-
-		if vm.highlightID != -1 {
-			e.HighlightManager().Remove(vm.highlightID)
-			vm.highlightID = -1
-		}
+		model = vm.operationManager.Execute(types.OpChange, e, vm.selectionStart, cursor.GetPosition())
+		vm.cleanup(model)
 		model.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
 		model.HandleCursorMovement()
 	}
@@ -157,4 +140,12 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 	}
 
 	return model, cmd
+}
+
+func (vm *VisualMode) cleanup(model types.Editor) {
+	if vm.highlightID != -1 {
+		model.HighlightManager().Remove(vm.highlightID)
+		vm.highlightID = -1
+	}
+	model.SetMode(state.NormalMode)
 }
