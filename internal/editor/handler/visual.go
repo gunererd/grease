@@ -77,22 +77,22 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 	case "q":
 		return e, tea.Quit
 	case "w":
-		model, cmd = CreateWordMotionCommand(false, nil)(e)
+		model = CreateWordMotionCommand(false, nil)(e)
 		model.HandleCursorMovement()
 	case "W":
-		model, cmd = CreateWordMotionCommand(true, nil)(e)
+		model = CreateWordMotionCommand(true, nil)(e)
 		model.HandleCursorMovement()
 	case "e":
-		model, cmd = CreateWordEndMotionCommand(false, nil)(e)
+		model = CreateWordEndMotionCommand(false, nil)(e)
 		model.HandleCursorMovement()
 	case "E":
-		model, cmd = CreateWordEndMotionCommand(true, nil)(e)
+		model = CreateWordEndMotionCommand(true, nil)(e)
 		model.HandleCursorMovement()
 	case "b":
-		model, cmd = CreateWordBackMotionCommand(false, nil)(e)
+		model = CreateWordBackMotionCommand(false, nil)(e)
 		model.HandleCursorMovement()
 	case "B":
-		model, cmd = CreateWordBackMotionCommand(true, nil)(e)
+		model = CreateWordBackMotionCommand(true, nil)(e)
 		model.HandleCursorMovement()
 	case "$":
 		// Vim style jump to end of line
@@ -110,7 +110,7 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 	case "y":
 		// Yank the selected text
 		yankOp := NewYankOperation()
-		model, cmd = yankOp.Execute(e, vm.selectionStart, cursor.GetPosition())
+		model = yankOp.Execute(e, vm.selectionStart, cursor.GetPosition())
 
 		// Clear highlight and exit visual mode
 		if vm.highlightID != -1 {
@@ -120,7 +120,7 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		model.SetMode(state.NormalMode)
 	case "d":
 		deleteOp := NewHistoryAwareOperation(NewDeleteOperation(), e.HistoryManager())
-		model, cmd = deleteOp.Execute(e, vm.selectionStart, cursor.GetPosition())
+		model = deleteOp.Execute(e, vm.selectionStart, cursor.GetPosition())
 
 		if vm.highlightID != -1 {
 			e.HighlightManager().Remove(vm.highlightID)
@@ -131,7 +131,7 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		model.HandleCursorMovement()
 	case "c":
 		changeOp := NewHistoryAwareOperation(NewChangeOperation(), e.HistoryManager())
-		model, cmd = changeOp.Execute(e, vm.selectionStart, cursor.GetPosition())
+		model = changeOp.Execute(e, vm.selectionStart, cursor.GetPosition())
 
 		if vm.highlightID != -1 {
 			e.HighlightManager().Remove(vm.highlightID)

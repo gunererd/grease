@@ -16,24 +16,24 @@ func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager) *NormalMod
 
 	// Vim style Jump to beginning of buffer
 	kt.Add([]string{"g", "g"}, keytree.KeyAction{
-		Execute: func(e types.Editor) (types.Editor, tea.Cmd) {
+		Execute: func(e types.Editor) types.Editor {
 			cursor, _ := e.Buffer().GetPrimaryCursor()
 			e.Buffer().MoveCursor(cursor.ID(), 0, 0)
 			e.HandleCursorMovement()
-			return e, nil
+			return e
 		},
 	})
 
 	// Undo command
 	kt.Add([]string{"u"}, keytree.KeyAction{
-		Execute: func(e types.Editor) (types.Editor, tea.Cmd) {
+		Execute: func(e types.Editor) types.Editor {
 			return history.Undo(e)
 		},
 	})
 
 	// Redo command
 	kt.Add([]string{"ctrl+r"}, keytree.KeyAction{
-		Execute: func(e types.Editor) (types.Editor, tea.Cmd) {
+		Execute: func(e types.Editor) types.Editor {
 			return history.Redo(e)
 		},
 	})
@@ -113,9 +113,9 @@ func NewNormalMode(kt *keytree.KeyTree, history types.HistoryManager) *NormalMod
 func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 
 	// Handle key sequences
-	if handled, model, cmd := h.keytree.Handle(msg.String(), e); handled {
+	if handled, model := h.keytree.Handle(msg.String(), e); handled {
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	}
 
 	cursor, err := e.Buffer().GetPrimaryCursor()
@@ -168,37 +168,37 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		e.HandleCursorMovement()
 		return e, nil
 	case "w":
-		model, cmd := CreateWordMotionCommand(false, nil)(e)
+		model := CreateWordMotionCommand(false, nil)(e)
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	case "W":
-		model, cmd := CreateWordMotionCommand(true, nil)(e)
+		model := CreateWordMotionCommand(true, nil)(e)
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	case "e":
-		model, cmd := CreateWordEndMotionCommand(false, nil)(e)
+		model := CreateWordEndMotionCommand(false, nil)(e)
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	case "E":
-		model, cmd := CreateWordEndMotionCommand(true, nil)(e)
+		model := CreateWordEndMotionCommand(true, nil)(e)
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	case "b":
-		model, cmd := CreateWordBackMotionCommand(false, nil)(e)
+		model := CreateWordBackMotionCommand(false, nil)(e)
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	case "B":
-		model, cmd := CreateWordBackMotionCommand(true, nil)(e)
+		model := CreateWordBackMotionCommand(true, nil)(e)
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	case "p":
-		model, cmd := NewHistoryAwareOperation(NewPasteOperation(false), e.HistoryManager()).Execute(e, cursor.GetPosition(), cursor.GetPosition())
+		model := NewHistoryAwareOperation(NewPasteOperation(false), e.HistoryManager()).Execute(e, cursor.GetPosition(), cursor.GetPosition())
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	case "P":
-		model, cmd := NewHistoryAwareOperation(NewPasteOperation(true), e.HistoryManager()).Execute(e, cursor.GetPosition(), cursor.GetPosition())
+		model := NewHistoryAwareOperation(NewPasteOperation(true), e.HistoryManager()).Execute(e, cursor.GetPosition(), cursor.GetPosition())
 		e.HandleCursorMovement()
-		return model, cmd
+		return model, nil
 	}
 	return e, nil
 }

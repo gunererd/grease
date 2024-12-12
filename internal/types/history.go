@@ -1,13 +1,11 @@
 package types
 
-import tea "github.com/charmbracelet/bubbletea"
-
 // HistoryManagerInterface defines the interface for managing history
 // This allows for different implementations of history management
 // to be used interchangeably.
 type HistoryManager interface {
-	Undo(e Editor) (Editor, tea.Cmd)
-	Redo(e Editor) (Editor, tea.Cmd)
+	Undo(e Editor) Editor
+	Redo(e Editor) Editor
 	Push(entry HistoryEntry)
 	CanUndo() bool
 	CanRedo() bool

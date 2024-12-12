@@ -3,13 +3,12 @@ package keytree
 import (
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/types"
 )
 
 // KeyAction represents what to do when a key sequence is matched
 type KeyAction struct {
-	Execute func(e types.Editor) (types.Editor, tea.Cmd)
+	Execute func(e types.Editor) types.Editor
 }
 
 // KeyNode represents a node in tree
@@ -52,7 +51,7 @@ func (kt *KeyTree) Add(sequence []string, action KeyAction) {
 
 // handled: true if the key was consumed as part of a sequence (whether complete or partial)
 // handled: false if the key doesn't match any sequence
-func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types.Editor, cmd tea.Cmd) {
+func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types.Editor) {
 	now := time.Now()
 
 	// Reset if timeout exceeded
@@ -70,7 +69,7 @@ func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types
 	if next == nil {
 		// Key doesn't match any sequence from branch
 		kt.current = kt.root
-		return false, e, nil
+		return false, e
 	}
 
 	// Key is part of a sequence
@@ -81,12 +80,11 @@ func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types
 	if kt.current.action != nil {
 		action := kt.current.action
 		kt.current = kt.root
-		model, cmd = action.Execute(e)
-		return true, model, cmd
+		return true, action.Execute(e)
 	}
 
 	// Key is part of an incomplete sequence
-	return true, e, nil
+	return true, e
 }
 
 func (kt *KeyTree) Reset() {

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/types"
 )
 
@@ -82,9 +81,9 @@ func (h *HistoryManager) PushRedo(entry types.HistoryEntry) {
 }
 
 // Undo restores the buffer and cursor to the state before the last operation
-func (h *HistoryManager) Undo(e types.Editor) (types.Editor, tea.Cmd) {
+func (h *HistoryManager) Undo(e types.Editor) types.Editor {
 	if !h.CanUndo() {
-		return e, nil
+		return e
 	}
 
 	entry, _ := h.PopUndo()
@@ -102,13 +101,13 @@ func (h *HistoryManager) Undo(e types.Editor) (types.Editor, tea.Cmd) {
 	// Push to redo stack
 	h.PushRedo(entry)
 
-	return e, nil
+	return e
 }
 
 // Redo reapplies the last undone operation
-func (h *HistoryManager) Redo(e types.Editor) (types.Editor, tea.Cmd) {
+func (h *HistoryManager) Redo(e types.Editor) types.Editor {
 	if !h.CanRedo() {
-		return e, nil
+		return e
 	}
 
 	entry, _ := h.PopRedo()
@@ -126,7 +125,7 @@ func (h *HistoryManager) Redo(e types.Editor) (types.Editor, tea.Cmd) {
 	// Push back to undo stack
 	h.undoStack = append(h.undoStack, entry)
 
-	return e, nil
+	return e
 }
 
 // HistoryAwareOperation wraps an Operation with history tracking
@@ -181,7 +180,7 @@ func captureLines(buf types.Buffer, from, to types.Position) map[int]string {
 }
 
 // Execute implements the Operation interface with history tracking
-func (h *HistoryAwareOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
+func (h *HistoryAwareOperation) Execute(e types.Editor, from, to types.Position) types.Editor {
 	// Capture state before operation
 	buf := e.Buffer()
 	cursor, _ := buf.GetPrimaryCursor()
@@ -189,7 +188,7 @@ func (h *HistoryAwareOperation) Execute(e types.Editor, from, to types.Position)
 	beforeLines := captureLines(buf, from, to)
 
 	// Execute the underlying operation
-	model, cmd := h.operation.Execute(e, from, to)
+	model := h.operation.Execute(e, from, to)
 
 	// Capture state after operation
 	cursor, _ = buf.GetPrimaryCursor()
@@ -206,5 +205,5 @@ func (h *HistoryAwareOperation) Execute(e types.Editor, from, to types.Position)
 	}
 	h.history.Push(entry)
 
-	return model, cmd
+	return model
 }

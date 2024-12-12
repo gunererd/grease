@@ -3,7 +3,6 @@ package handler
 import (
 	"regexp"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/types"
 )
@@ -127,7 +126,7 @@ func NewMotionCommand(motion Motion, operation types.Operation) *MotionCommand {
 	}
 }
 
-func (mc *MotionCommand) Execute(e types.Editor) (types.Editor, tea.Cmd) {
+func (mc *MotionCommand) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
 	cursor, _ := buf.GetPrimaryCursor()
 	curPos := cursor.GetPosition()
@@ -139,25 +138,25 @@ func (mc *MotionCommand) Execute(e types.Editor) (types.Editor, tea.Cmd) {
 
 	// If no operation, just move cursor
 	cursor.SetPosition(targetPos)
-	return e, nil
+	return e
 }
 
 // Factory function for word motion commands
-func CreateWordMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
+func CreateWordMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) types.Editor {
 	motion := NewWordMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
 }
 
 // Factory function for word end motion commands
-func CreateWordEndMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
+func CreateWordEndMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) types.Editor {
 	motion := NewWordEndMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute
 }
 
 // Factory function for word back motion commands
-func CreateWordBackMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) (types.Editor, tea.Cmd) {
+func CreateWordBackMotionCommand(bigWord bool, operation types.Operation) func(e types.Editor) types.Editor {
 	motion := NewWordBackMotion(bigWord)
 	cmd := NewMotionCommand(motion, operation)
 	return cmd.Execute

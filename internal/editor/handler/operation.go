@@ -4,7 +4,6 @@ import (
 	"log"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
@@ -16,7 +15,7 @@ func NewDeleteOperation() types.Operation {
 	return &DeleteOperation{}
 }
 
-func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
+func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) types.Editor {
 	buf := e.Buffer()
 	if from.Line() == to.Line() {
 		// Single line deletion
@@ -37,7 +36,7 @@ func (d *DeleteOperation) Execute(e types.Editor, from, to types.Position) (type
 			buf.RemoveLine(from.Line() + 1)
 		}
 	}
-	return e, nil
+	return e
 }
 
 // ChangeOperation implements change operation (delete + enter insert mode)
@@ -51,10 +50,10 @@ func NewChangeOperation() types.Operation {
 	}
 }
 
-func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
-	model, cmd := c.DeleteOperation.Execute(e, from, to)
+func (c *ChangeOperation) Execute(e types.Editor, from, to types.Position) types.Editor {
+	model := c.DeleteOperation.Execute(e, from, to)
 	e.SetMode(state.InsertMode)
-	return model, cmd
+	return model
 }
 
 // YankOperation implements copying of text between two positions
@@ -68,7 +67,7 @@ func NewYankOperation() types.Operation {
 	}
 }
 
-func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
+func (y *YankOperation) Execute(e types.Editor, from, to types.Position) types.Editor {
 	buf := e.Buffer()
 	var yankedText string
 
@@ -92,7 +91,7 @@ func (y *YankOperation) Execute(e types.Editor, from, to types.Position) (types.
 
 	defaultRegister.Set(yankedText)
 	log.Println("Yanked text:", yankedText)
-	return e, nil
+	return e
 }
 
 // PasteOperation implements pasting of text after or before cursor
@@ -104,13 +103,13 @@ func NewPasteOperation(before bool) types.Operation {
 	return &PasteOperation{before: before}
 }
 
-func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (types.Editor, tea.Cmd) {
+func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) types.Editor {
 	buf := e.Buffer()
 	text := defaultRegister.Get()
 	cursor, _ := buf.GetPrimaryCursor()
 
 	if text == "" {
-		return e, nil
+		return e
 	}
 
 	// Split text into lines
@@ -128,7 +127,7 @@ func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (types
 		if len(line) == 0 {
 			buf.ReplaceLine(from.Line(), text)
 			buf.MoveCursor(cursor.ID(), from.Line(), len(text))
-			return e, nil
+			return e
 		}
 
 		newLine := line[:insertPos] + text + line[insertPos:]
@@ -171,5 +170,5 @@ func (p *PasteOperation) Execute(e types.Editor, from, to types.Position) (types
 		// Move cursor to end of pasted text
 		buf.MoveCursor(cursor.ID(), from.Line()+len(lines)-1, len(lines[len(lines)-1]))
 	}
-	return e, nil
+	return e
 }
