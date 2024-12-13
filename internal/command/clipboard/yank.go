@@ -49,10 +49,11 @@ func extractSingleLine(lines []string, from, to types.Position) string {
 		return ""
 	}
 	endCol := to.Column()
-	if endCol > len(line) {
+	if endCol >= len(line)-1 {
 		endCol = len(line)
+		return line[from.Column():endCol]
 	}
-	return line[from.Column() : endCol+1]
+	return line[from.Column():endCol]
 }
 
 func extractMultiLine(lines []string, from, to types.Position) string {

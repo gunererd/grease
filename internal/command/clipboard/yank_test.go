@@ -30,15 +30,15 @@ func (s *YankTestSuite) TestYankCommand() {
 		expectedLines []string
 		expectedPos   types.Position
 	}{
-		//
-		// 	name:          "yank single word",
-		// 	input:         "hello world",
-		// 	pos:           buffer.NewPosition(0, 0),
-		// 	motion:        motion.NewWordMotion(false),
-		// 	expectedText:  "hello ",
-		// 	expectedLines: []string{"hello world"},
-		// 	expectedPos:   buffer.NewPosition(0, 0),
-		// },
+		{
+			name:          "yank single word",
+			input:         "hello world",
+			pos:           buffer.NewPosition(0, 0),
+			motion:        motion.NewWordMotion(false),
+			expectedText:  "hello ",
+			expectedLines: []string{"hello world"},
+			expectedPos:   buffer.NewPosition(0, 0),
+		},
 		{
 			name:          "yank to end of line",
 			input:         "hello world",
