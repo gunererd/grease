@@ -276,26 +276,30 @@ func (vp *Viewport) getHighlightRanges(lineNumber, viewportOffset, contentLength
 }
 
 // collectStyleRanges gathers cursor and highlight ranges for a line
-func (vp *Viewport) collectStyleRanges(lineNumber int, contentLength int) ([]StyleRange, *ViewportCursor) {
+func (vp *Viewport) collectStyleRanges(lineNumber int, contentLength int) ([]StyleRange, []ViewportCursor) {
 	ranges := []StyleRange{}
 	viewportOffset := vp.offset.Column()
-	cursorCol := vp.cursor.Column() - viewportOffset
 
 	// Get highlight styles
 	if highlights := vp.getHighlightRanges(lineNumber, viewportOffset, contentLength); len(highlights) > 0 {
 		ranges = append(ranges, highlights...)
 	}
 
-	// Add cursor style if on this line
-	var cursor *ViewportCursor
-	if vp.showCursor && vp.cursor.Line() == lineNumber && cursorCol >= 0 && cursorCol < contentLength {
-		cursor = &ViewportCursor{
-			position: cursorCol,
-			style:    vp.getCursorStyle(),
+	// Add cursor styles for all visible cursors on this line
+	var cursors []ViewportCursor
+	for _, cursorInfo := range vp.cursors {
+		if cursorInfo.pos.Line() == lineNumber {
+			cursorCol := cursorInfo.pos.Column() - viewportOffset
+			if cursorCol >= 0 && cursorCol < contentLength {
+				cursors = append(cursors, ViewportCursor{
+					position: cursorCol,
+					style:    vp.getCursorStyle(),
+				})
+			}
 		}
 	}
 
-	return ranges, cursor
+	return ranges, cursors
 }
 
 // mergeHighlightRanges handles merging overlapping highlights
@@ -328,21 +332,27 @@ func (vp *Viewport) mergeHighlightRanges(ranges []StyleRange) []StyleRange {
 }
 
 // applyStyles handles the actual style application
-func (vp *Viewport) applyStyles(lineContent string, highlightRanges []StyleRange, cursor *ViewportCursor) string {
+func (vp *Viewport) applyStyles(lineContent string, highlightRanges []StyleRange, cursors []ViewportCursor) string {
 	var result strings.Builder
 	result.Grow(len(lineContent) * 2)
 
 	lastPos := 0
+	cursorIndex := 0
+
+	// Sort cursors by position
+	sort.Slice(cursors, func(i, j int) bool {
+		return cursors[i].position < cursors[j].position
+	})
+
 	for _, r := range highlightRanges {
-		// Ensure valid bounds
-		if r.start < 0 {
-			r.start = 0
-		}
-		if r.end > len(lineContent) {
-			r.end = len(lineContent)
-		}
-		if r.start >= r.end || r.start >= len(lineContent) {
-			continue
+		// Handle cursors before this range
+		for cursorIndex < len(cursors) && cursors[cursorIndex].position < r.start {
+			if cursors[cursorIndex].position > lastPos {
+				result.WriteString(lineContent[lastPos:cursors[cursorIndex].position])
+			}
+			result.WriteString(cursors[cursorIndex].style.Render(string(lineContent[cursors[cursorIndex].position])))
+			lastPos = cursors[cursorIndex].position + 1
+			cursorIndex++
 		}
 
 		// Add unstyled text before this range
@@ -350,34 +360,32 @@ func (vp *Viewport) applyStyles(lineContent string, highlightRanges []StyleRange
 			result.WriteString(lineContent[lastPos:r.start])
 		}
 
-		// If cursor is in this range, split the styling
-		if cursor != nil && cursor.position >= r.start && cursor.position < r.end {
-			// Write highlighted text before cursor
-			if cursor.position > r.start {
-				result.WriteString(r.style.Render(lineContent[r.start:cursor.position]))
+		// Handle cursors within this range
+		rangeStart := r.start
+		for cursorIndex < len(cursors) && cursors[cursorIndex].position < r.end {
+			if cursors[cursorIndex].position > rangeStart {
+				result.WriteString(r.style.Render(lineContent[rangeStart:cursors[cursorIndex].position]))
 			}
-			// Write cursor
-			result.WriteString(cursor.style.Render(string(lineContent[cursor.position])))
-			// Write highlighted text after cursor
-			if cursor.position+1 < r.end {
-				result.WriteString(r.style.Render(lineContent[cursor.position+1 : r.end]))
-			}
-		} else {
-			// Add styled text without cursor
-			result.WriteString(r.style.Render(lineContent[r.start:r.end]))
+			result.WriteString(cursors[cursorIndex].style.Render(string(lineContent[cursors[cursorIndex].position])))
+			rangeStart = cursors[cursorIndex].position + 1
+			cursorIndex++
+		}
+
+		// Add remaining styled text in this range
+		if rangeStart < r.end {
+			result.WriteString(r.style.Render(lineContent[rangeStart:r.end]))
 		}
 		lastPos = r.end
 	}
 
-	// Handle cursor if it's after all highlights
-	if cursor != nil && (len(highlightRanges) == 0 || cursor.position >= lastPos) {
-		// Add any unstyled text before cursor
-		if cursor.position > lastPos {
-			result.WriteString(lineContent[lastPos:cursor.position])
+	// Handle remaining cursors
+	for cursorIndex < len(cursors) {
+		if cursors[cursorIndex].position > lastPos {
+			result.WriteString(lineContent[lastPos:cursors[cursorIndex].position])
 		}
-		// Add cursor
-		result.WriteString(cursor.style.Render(string(lineContent[cursor.position])))
-		lastPos = cursor.position + 1
+		result.WriteString(cursors[cursorIndex].style.Render(string(lineContent[cursors[cursorIndex].position])))
+		lastPos = cursors[cursorIndex].position + 1
+		cursorIndex++
 	}
 
 	// Add remaining unstyled text
@@ -396,14 +404,14 @@ func (vp *Viewport) renderLine(content string, lineNumber int) string {
 	}
 
 	visibleContent := vp.prepareVisibleContent(content)
-	highlightRanges, cursor := vp.collectStyleRanges(lineNumber, len(content))
+	highlightRanges, cursors := vp.collectStyleRanges(lineNumber, len(content))
 
-	if len(highlightRanges) == 0 && cursor == nil {
+	if len(highlightRanges) == 0 && len(cursors) == 0 {
 		return visibleContent
 	}
 
 	mergedHighlights := vp.mergeHighlightRanges(highlightRanges)
-	return vp.applyStyles(visibleContent, mergedHighlights, cursor)
+	return vp.applyStyles(visibleContent, mergedHighlights, cursors)
 }
 
 // createEmptyLine creates an empty line with proper formatting

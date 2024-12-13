@@ -26,4 +26,5 @@ type Viewport interface {
 	ScrollLeft(cols int)
 	ScrollRight(cols int)
 	SetHighlightManager(hm HighlightManager)
+	SyncCursors(bufferCursors []Cursor)
 }

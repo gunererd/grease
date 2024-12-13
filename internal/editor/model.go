@@ -156,10 +156,7 @@ func (e *Editor) SetMode(mode state.Mode) {
 // }
 
 func (e *Editor) HandleCursorMovement() {
-	for _, cursor := range e.Buffer().GetCursors() {
-		pos := cursor.GetPosition()
-		e.Viewport().SetCursor(pos) // This will also handle scrolling
-	}
+	e.Viewport().SyncCursors(e.Buffer().GetCursors())
 }
 
 // LoadFromStdin loads content from stdin into the buffer
