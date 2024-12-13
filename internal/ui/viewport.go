@@ -12,14 +12,23 @@ import (
 	"github.com/gunererd/grease/internal/types"
 )
 
+// Add at the top with other type definitions
+type CursorInfo struct {
+	show    bool
+	pos     types.Position
+	style   *buffer.CursorStyle
+	primary bool
+}
+
 // Viewport represents a view into a portion of the buffer
 type Viewport struct {
 	width            int
 	height           int
 	offset           types.Position // Top-left position of viewport in buffer
 	scrollOff        int            // Number of lines to keep visible above/below cursor
-	cursor           types.Position // Current cursor position
-	showCursor       bool
+	cursors          []CursorInfo   // New field for multiple cursors
+	cursor           types.Position // Keep temporarily for backwards compatibility
+	showCursor       bool           // Keep temporarily for backwards compatibility
 	cursorStyle      *buffer.CursorStyle
 	mode             state.Mode
 	highlightManager types.HighlightManager
@@ -27,14 +36,23 @@ type Viewport struct {
 
 // NewViewport creates a new viewport with the given dimensions
 func NewViewport(width, height int) types.Viewport {
+	cursorStyle := buffer.NewCursorStyle()
 	return &Viewport{
-		width:            width,
-		height:           height,
-		offset:           buffer.NewPosition(0, 0),
-		scrollOff:        5,
-		cursor:           buffer.NewPosition(0, 0),
-		showCursor:       true,
-		cursorStyle:      buffer.NewCursorStyle(),
+		width:     width,
+		height:    height,
+		offset:    buffer.NewPosition(0, 0),
+		scrollOff: 5,
+		cursors: []CursorInfo{
+			{
+				show:    true,
+				pos:     buffer.NewPosition(0, 0),
+				style:   cursorStyle,
+				primary: true,
+			},
+		},
+		cursor:           buffer.NewPosition(0, 0), // Keep temporarily
+		showCursor:       true,                     // Keep temporarily
+		cursorStyle:      cursorStyle,
 		mode:             state.NormalMode,
 		highlightManager: nil,
 	}
@@ -453,4 +471,34 @@ func (vp *Viewport) ScrollLeft(cols int) {
 // ScrollRight scrolls the viewport right by the specified number of columns
 func (vp *Viewport) ScrollRight(cols int) {
 	vp.offset = buffer.NewPosition(vp.offset.Line(), vp.offset.Column()+cols)
+}
+
+// Add new methods for cursor management
+func (vp *Viewport) SyncCursors(bufferCursors []types.Cursor) {
+	vp.cursors = make([]CursorInfo, len(bufferCursors))
+	for i, cursor := range bufferCursors {
+		vp.cursors[i] = CursorInfo{
+			show:    true,
+			pos:     cursor.GetPosition(),
+			style:   vp.cursorStyle,
+			primary: i == 0, // First cursor is primary, handle it in buffer later
+		}
+	}
+
+	// Ensure at least primary cursor is visible
+	if len(vp.cursors) > 0 {
+		vp.ScrollTo(vp.cursors[0].pos)
+		// Update legacy cursor field temporarily
+		vp.cursor = vp.cursors[0].pos
+	}
+}
+
+func (vp *Viewport) GetVisibleCursors() []CursorInfo {
+	visible := make([]CursorInfo, 0)
+	for _, cursor := range vp.cursors {
+		if vp.IsPositionVisible(cursor.pos) {
+			visible = append(visible, cursor)
+		}
+	}
+	return visible
 }
