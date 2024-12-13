@@ -27,6 +27,8 @@ func main() {
 	defer f.Close()
 
 	profile := flag.Bool("profile", false, "Enable pprof profiling on :6060")
+	filename := flag.String("f", "", "Input file path")
+	flag.StringVar(filename, "file", "", "Input file path")
 	flag.Parse()
 	if *profile {
 		go func() {
@@ -46,12 +48,20 @@ func main() {
 	operationManager := handler.NewOperationManager(historyManager)
 	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, historyManager, operationManager)
 
-	// Load content from stdin if it's not a terminal
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		if err := m.LoadFromStdin(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading stdin: %v\n", err)
+	// Check for file input first
+	if *filename != "" {
+		if err := m.LoadFromFile(*filename); err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 			os.Exit(1)
+		}
+	} else {
+		// Load content from stdin if it's not a terminal
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			if err := m.LoadFromStdin(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading stdin: %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 

@@ -154,7 +154,31 @@ func (e *Editor) HandleCursorMovement() {
 
 // LoadFromStdin loads content from stdin into the buffer
 func (e *Editor) LoadFromStdin() error {
-	return e.Buffer().LoadFromReader(os.Stdin)
+	content, err := e.io.LoadContent()
+	if err != nil {
+		return fmt.Errorf("error reading from stdin: %w", err)
+	}
+	return e.buffer.LoadFromReader(strings.NewReader(string(content)))
+}
+
+// LoadFromFile loads content from a file into the editor's buffer
+func (e *Editor) LoadFromFile(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("error opening file: %w", err)
+	}
+	defer file.Close()
+
+	if err := e.io.SetSource(ioManager.NewFileSource(file, filename)); err != nil {
+		return fmt.Errorf("error setting source: %w", err)
+	}
+
+	content, err := e.io.LoadContent()
+	if err != nil {
+		return fmt.Errorf("error reading file: %w", err)
+	}
+
+	return e.buffer.LoadFromReader(strings.NewReader(string(content)))
 }
 
 // AddCursor adds a new cursor at the specified position
