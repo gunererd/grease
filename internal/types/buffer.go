@@ -12,9 +12,12 @@ type Buffer interface {
 	LineLen(line int) (int, error)
 	LoadFromReader(r io.Reader) error
 
-	AddCursor(pos Position, priority int) (Cursor, error)
+	AddCursor() (Cursor, error)
 	RemoveCursor(id int)
 	GetPrimaryCursor() (Cursor, error)
+	GetCursor(id int) (Cursor, error)
+	GetCursors() []Cursor
+	ClearCursors()
 	MoveCursorRelative(cursorID int, lineOffset, columnOffset int) error
 	MoveCursor(cursorID int, lineOffset, columnOffset int) error
 	NextWordPosition(pos Position, bigWord bool) Position

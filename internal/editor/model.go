@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/gunererd/grease/internal/editor/handler"
 	ioManager "github.com/gunererd/grease/internal/io"
 	"github.com/gunererd/grease/internal/keytree"
+	"github.com/gunererd/grease/internal/register"
 	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
@@ -34,8 +36,9 @@ func New(
 	wp types.Viewport,
 	hlm types.HighlightManager,
 	kt *keytree.KeyTree,
-	hm types.HistoryManager,
-	om types.OperationManager,
+	// hm types.HistoryManager,
+	// om types.OperationManager,
+	register *register.Register,
 ) *Editor {
 	e := &Editor{
 		buffer:          b,
@@ -45,12 +48,12 @@ func New(
 		showLineNumbers: true,
 		statusLine:      sl,
 		handlers: map[state.Mode]types.ModeHandler{
-			state.NormalMode: handler.NewNormalMode(kt, hm, om),
+			state.NormalMode: handler.NewNormalMode(kt, register),
 			state.InsertMode: handler.NewInsertMode(),
-			state.VisualMode: handler.NewVisualMode(kt, hm, om),
+			state.VisualMode: handler.NewVisualMode(kt, register),
 		},
-		highlightManager: hlm,
-		historyManager:   hm,
+		// highlightManager: hlm,
+		// historyManager:   hm,
 	}
 	return e
 }
@@ -146,10 +149,17 @@ func (e *Editor) SetMode(mode state.Mode) {
 	e.Viewport().SetMode(mode)
 }
 
+// func (e *Editor) HandleCursorMovement() {
+// 	cursor, _ := e.Buffer().GetPrimaryCursor()
+// 	pos := cursor.GetPosition()
+// 	e.Viewport().SetCursor(pos) // This will also handle scrolling
+// }
+
 func (e *Editor) HandleCursorMovement() {
-	cursor, _ := e.Buffer().GetPrimaryCursor()
-	pos := cursor.GetPosition()
-	e.Viewport().SetCursor(pos) // This will also handle scrolling
+	for _, cursor := range e.Buffer().GetCursors() {
+		pos := cursor.GetPosition()
+		e.Viewport().SetCursor(pos) // This will also handle scrolling
+	}
 }
 
 // LoadFromStdin loads content from stdin into the buffer
@@ -183,7 +193,7 @@ func (e *Editor) LoadFromFile(filename string) error {
 
 // AddCursor adds a new cursor at the specified position
 func (e *Editor) AddCursor(pos types.Position) error {
-	_, err := e.Buffer().AddCursor(pos, 50) // Regular cursors get normal priority
+	_, err := e.Buffer().AddCursor()
 	return err
 }
 

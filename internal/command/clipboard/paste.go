@@ -20,37 +20,24 @@ func NewPasteCommand(before bool) *PasteCommand {
 
 func (c *PasteCommand) Execute(lines []string, pos types.Position, register *register.Register) ([]string, types.Position) {
 	text := register.Get()
-	newLines, newPos := insertText(lines, pos, text, c.before)
-	return newLines, newPos
-}
-
-func (c *PasteCommand) Name() string {
-	return "paste"
-}
-
-func insertText(lines []string, pos types.Position, text string, before bool) ([]string, types.Position) {
 	if text == "" {
 		return lines, pos
 	}
 
-	// Copy lines to avoid modifying original slice
-	result := make([]string, len(lines))
-	copy(result, lines)
-
 	textLines := strings.Split(text, "\n")
-	insertPos := calculateInsertPosition(pos, before)
+	insertPos := pos.Column()
+	if !c.before {
+		insertPos++
+	}
 
 	if len(textLines) == 1 {
-		return insertSingleLine(result, pos, textLines[0], insertPos)
+		return insertSingleLine(lines, pos, textLines[0], insertPos)
 	}
-	return insertMultiLine(result, pos, textLines, insertPos)
+	return insertMultiLine(lines, pos, textLines, insertPos)
 }
 
-func calculateInsertPosition(pos types.Position, before bool) int {
-	if before {
-		return pos.Column()
-	}
-	return pos.Column() + 1
+func (c *PasteCommand) Name() string {
+	return "paste"
 }
 
 func insertSingleLine(lines []string, pos types.Position, text string, insertPos int) ([]string, types.Position) {

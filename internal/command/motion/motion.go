@@ -12,15 +12,16 @@ type Motion interface {
 
 // MotionCommand wraps a motion and handles the actual cursor movement
 type MotionCommand struct {
-	motion Motion
+	motion   Motion
+	cursorID int
 }
 
-func NewMotionCommand(motion Motion) *MotionCommand {
-	return &MotionCommand{motion: motion}
+func NewMotionCommand(motion Motion, cursorID int) *MotionCommand {
+	return &MotionCommand{motion: motion, cursorID: cursorID}
 }
 
 func (c *MotionCommand) Execute(e types.Editor) types.Editor {
-	cursor, err := e.Buffer().GetPrimaryCursor()
+	cursor, err := e.Buffer().GetCursor(c.cursorID)
 	if err != nil {
 		return e
 	}
@@ -32,7 +33,7 @@ func (c *MotionCommand) Execute(e types.Editor) types.Editor {
 	)
 
 	// Move cursor to new position
-	e.Buffer().MoveCursor(cursor.ID(), newPos.Line(), newPos.Column())
+	e.Buffer().MoveCursor(c.cursorID, newPos.Line(), newPos.Column())
 	e.HandleCursorMovement()
 
 	return e

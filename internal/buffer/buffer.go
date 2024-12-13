@@ -36,7 +36,10 @@ func New() *Buffer {
 		lines: [][]rune{{}}, // start with one empty line
 	}
 	// Create primary cursor at start of buffer
-	b.AddCursor(NewPosition(0, 0), 100) // Primary cursor gets high priority
+	pos := NewPosition(0, 0)
+	cursor := NewCursor(pos, 0, 0)
+	b.cursors = append(b.cursors, cursor)
+	b.nextCursorID++
 	return b
 }
 
@@ -58,54 +61,6 @@ func (b *Buffer) LoadFromReader(r io.Reader) error {
 	}
 
 	return scanner.Err()
-}
-
-// AddCursor adds a new cursor at the specified position
-func (b *Buffer) AddCursor(pos types.Position, priority int) (types.Cursor, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	if err := b.validatePosition(pos); err != nil {
-		return nil, err
-	}
-
-	cursor := NewCursor(pos, b.nextCursorID, priority)
-	b.nextCursorID++
-
-	// Insert cursor in priority order
-	insertIdx := sort.Search(len(b.cursors), func(i int) bool {
-		return b.cursors[i].GetPriority() <= priority
-	})
-
-	b.cursors = append(b.cursors, nil)
-	copy(b.cursors[insertIdx+1:], b.cursors[insertIdx:])
-	b.cursors[insertIdx] = cursor
-
-	return cursor, nil
-}
-
-// RemoveCursor removes a cursor by its ID
-func (b *Buffer) RemoveCursor(id int) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	for i, c := range b.cursors {
-		if c.ID() == id {
-			b.cursors = append(b.cursors[:i], b.cursors[i+1:]...)
-			return
-		}
-	}
-}
-
-// GetPrimaryCursor returns the highest priority cursor
-func (b *Buffer) GetPrimaryCursor() (types.Cursor, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-
-	if len(b.cursors) == 0 {
-		return nil, ErrNoCursor
-	}
-	return b.cursors[0], nil
 }
 
 func (b *Buffer) MoveCursorRelative(cursorID int, lineOffset, columnOffset int) error {
@@ -176,6 +131,81 @@ func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
 
 	cursor.SetPosition(newPos)
 	return nil
+}
+
+// AddCursor adds cursor
+func (b *Buffer) AddCursor() (types.Cursor, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	lastCursor, err := b.GetLastCursor()
+	if err != nil {
+		return nil, err
+	}
+	pos := lastCursor.GetPosition()
+	newPos := NewPosition(pos.Line(), pos.Column())
+	cursor := NewCursor(newPos, b.nextCursorID, 0)
+
+	b.cursors = append(b.cursors, cursor)
+	b.nextCursorID++
+	return cursor, nil
+}
+
+func (b *Buffer) GetLastCursor() (types.Cursor, error) {
+	if len(b.cursors) == 0 {
+		return nil, ErrNoCursor
+	}
+	return b.cursors[len(b.cursors)-1], nil
+}
+
+// RemoveCursor removes a cursor by its ID
+func (b *Buffer) RemoveCursor(id int) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	for i, c := range b.cursors {
+		if c.ID() == id {
+			b.cursors = append(b.cursors[:i], b.cursors[i+1:]...)
+			return
+		}
+	}
+}
+
+// GetPrimaryCursor returns the highest priority cursor
+func (b *Buffer) GetPrimaryCursor() (types.Cursor, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	if len(b.cursors) == 0 {
+		return nil, ErrNoCursor
+	}
+	return b.cursors[0], nil
+}
+
+func (b *Buffer) GetCursor(id int) (types.Cursor, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	for _, c := range b.cursors {
+		if c.ID() == id {
+			return c, nil
+		}
+	}
+	return nil, ErrNoCursor
+}
+
+func (b *Buffer) GetCursors() []types.Cursor {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	return b.cursors
+}
+
+func (b *Buffer) ClearCursors() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.cursors = []types.Cursor{NewCursor(NewPosition(0, 0), 0, 0)}
 }
 
 // Insert inserts text at all cursor positions
@@ -563,15 +593,15 @@ func (b *Buffer) RemoveLine(line int) error {
 }
 
 // validatePosition checks if a position is valid within the buffer
-func (b *Buffer) validatePosition(pos types.Position) error {
-	if pos.Line() < 0 || pos.Line() >= len(b.lines) {
-		return ErrInvalidLine
-	}
-	if pos.Column() < 0 || pos.Column() > len(b.lines[pos.Line()]) {
-		return ErrInvalidOffset
-	}
-	return nil
-}
+// func (b *Buffer) validatePosition(pos types.Position) error {
+// 	if pos.Line() < 0 || pos.Line() >= len(b.lines) {
+// 		return ErrInvalidLine
+// 	}
+// 	if pos.Column() < 0 || pos.Column() > len(b.lines[pos.Line()]) {
+// 		return ErrInvalidOffset
+// 	}
+// 	return nil
+// }
 
 // findCursor finds a cursor by its ID (internal method)
 func (b *Buffer) findCursor(id int) types.Cursor {

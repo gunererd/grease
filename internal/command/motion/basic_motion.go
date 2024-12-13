@@ -1,6 +1,8 @@
 package motion
 
 import (
+	"log"
+
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/types"
 )
@@ -69,7 +71,7 @@ func (m *UpMotion) Calculate(lines []string, pos types.Position) types.Position 
 }
 
 func (m *UpMotion) Name() string {
-	return "k"
+	return "move_line_up"
 }
 
 type DownMotion struct{}
@@ -94,17 +96,23 @@ func (m *DownMotion) Calculate(lines []string, pos types.Position) types.Positio
 			newCol = 0
 		}
 	}
-
 	return buffer.NewPosition(pos.Line()+1, newCol)
 }
 
 func (m *DownMotion) Name() string {
-	return "j"
+	return "move_line_down"
 }
 
-func CreateBasicMotionCommand(motion Motion) func(types.Editor) types.Editor {
+func CreateBasicMotionCommand(motion Motion, cursorID int) func(types.Editor) types.Editor {
 	return func(e types.Editor) types.Editor {
-		cmd := NewMotionCommand(motion)
+		buf := e.Buffer()
+		cursor, err := buf.GetCursor(cursorID)
+		if err != nil {
+			return e
+		}
+		pos := cursor.GetPosition()
+		log.Printf("type:<CreateBasicMotionCommand>, name:<%s>, cursorID:<%d>, pos:<%v>\n", motion.Name(), cursorID, pos)
+		cmd := NewMotionCommand(motion, cursorID)
 		return cmd.Execute(e)
 	}
 }

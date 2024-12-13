@@ -11,15 +11,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/editor"
-	"github.com/gunererd/grease/internal/editor/handler"
 	"github.com/gunererd/grease/internal/highlight"
 	ioManager "github.com/gunererd/grease/internal/io"
 	"github.com/gunererd/grease/internal/keytree"
+	"github.com/gunererd/grease/internal/register"
 	"github.com/gunererd/grease/internal/ui"
 )
 
 func main() {
-
 	f, err := tea.LogToFile("debug.log", "DEBUG")
 	if err != nil {
 		log.Fatal(err)
@@ -30,6 +29,7 @@ func main() {
 	filename := flag.String("f", "", "Input file path")
 	flag.StringVar(filename, "file", "", "Input file path")
 	flag.Parse()
+
 	if *profile {
 		go func() {
 			log.Println("Starting pprof server on :6060")
@@ -44,9 +44,8 @@ func main() {
 	statusLine := ui.NewStatusLine()
 	viewport := ui.NewViewport(0, 0)
 	viewport.SetHighlightManager(highlightManager)
-	historyManager := handler.NewHistoryManager(100)
-	operationManager := handler.NewOperationManager(historyManager)
-	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, historyManager, operationManager)
+	register := register.NewRegister()
+	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, register)
 
 	// Check for file input first
 	if *filename != "" {

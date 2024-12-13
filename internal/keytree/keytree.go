@@ -8,7 +8,9 @@ import (
 
 // KeyAction represents what to do when a key sequence is matched
 type KeyAction struct {
+	Before  func(e types.Editor) types.Editor
 	Execute func(e types.Editor) types.Editor
+	After   func(e types.Editor) types.Editor
 }
 
 // KeyNode represents a node in tree
@@ -80,7 +82,16 @@ func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types
 	if kt.current.action != nil {
 		action := kt.current.action
 		kt.current = kt.root
-		return true, action.Execute(e)
+		if action.Before != nil {
+			e = action.Before(e)
+		}
+		if action.Execute != nil {
+			e = action.Execute(e)
+		}
+		if action.After != nil {
+			e = action.After(e)
+		}
+		return true, e
 	}
 
 	// Key is part of an incomplete sequence
