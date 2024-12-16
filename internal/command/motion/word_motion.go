@@ -23,11 +23,58 @@ func (m *WordMotion) Calculate(lines []string, pos types.Position) types.Positio
 	}
 
 	line := lines[pos.Line()]
+
+	// Handle empty or single character line
+	if len(line) <= 1 {
+		return m.handleEmptyOrSingleCharLine(lines, pos)
+	}
+
+	// Get next position based on current position
+	var nextPos types.Position
+	if m.bigWord {
+		nextPos = m.handleBigWordMotion(line, pos)
+	} else {
+		nextPos = m.handleWordMotion(line, pos)
+	}
+
+	// If we didn't move or reached end of line, try next line
+	if (nextPos.Line() == pos.Line() && nextPos.Column() >= len(line)) ||
+		(nextPos.Equal(pos) && pos.Line() < len(lines)-1) {
+		return buffer.NewPosition(pos.Line()+1, 0)
+	}
+
+	return nextPos
+}
+
+func (m *WordMotion) handleBigWordMotion(line string, pos types.Position) types.Position {
+	col := pos.Column()
+	// Skip until we find a space
+	for col < len(line) && !unicode.IsSpace(rune(line[col])) {
+		col++
+	}
+	// Skip spaces
+	for col < len(line) && unicode.IsSpace(rune(line[col])) {
+		col++
+	}
+	return buffer.NewPosition(pos.Line(), col)
+}
+
+func (m *WordMotion) handleWordMotion(line string, pos types.Position) types.Position {
 	col := pos.Column()
 
-	// Skip current word/WORD
-	for col < len(line) && !m.isWordBoundary(line[col:], m.bigWord) {
+	// If we're on punctuation
+	if col < len(line) && isPunctuation(rune(line[col])) {
+		return m.handlePunctuationMotion(line, pos)
+	}
+
+	// Skip current word
+	for col < len(line) && !unicode.IsSpace(rune(line[col])) && !isPunctuation(rune(line[col])) {
 		col++
+	}
+
+	// If we hit punctuation, stop there
+	if col < len(line) && isPunctuation(rune(line[col])) {
+		return buffer.NewPosition(pos.Line(), col)
 	}
 
 	// Skip spaces
@@ -35,30 +82,31 @@ func (m *WordMotion) Calculate(lines []string, pos types.Position) types.Positio
 		col++
 	}
 
-	// If we reached end of line, try next line
-	if col >= len(line) && pos.Line() < len(lines)-1 {
-		return buffer.NewPosition(pos.Line()+1, 0)
-	}
-
-	// If we're still in bounds, return new position
-	if col < len(line) {
-		return buffer.NewPosition(pos.Line(), col)
-	}
-
-	return pos
+	return buffer.NewPosition(pos.Line(), col)
 }
 
-func (m *WordMotion) isWordBoundary(text string, bigWord bool) bool {
-	if len(text) == 0 {
-		return false
+func (m *WordMotion) handlePunctuationMotion(line string, pos types.Position) types.Position {
+	col := pos.Column()
+
+	// If next character is also punctuation
+	if col+1 < len(line) && isPunctuation(rune(line[col+1])) {
+		return buffer.NewPosition(pos.Line(), col+1)
 	}
 
-	if bigWord {
-		return unicode.IsSpace(rune(text[0]))
+	// Skip current punctuation and spaces
+	col++
+	for col < len(line) && (unicode.IsSpace(rune(line[col])) || isPunctuation(rune(line[col]))) {
+		col++
 	}
 
-	// For normal words, consider punctuation as boundary
-	return unicode.IsSpace(rune(text[0])) || unicode.IsPunct(rune(text[0]))
+	return buffer.NewPosition(pos.Line(), col)
+}
+
+func (m *WordMotion) handleEmptyOrSingleCharLine(lines []string, pos types.Position) types.Position {
+	if pos.Line() < len(lines)-1 {
+		return buffer.NewPosition(pos.Line()+1, 0)
+	}
+	return pos
 }
 
 func (m *WordMotion) Name() string {
@@ -66,4 +114,8 @@ func (m *WordMotion) Name() string {
 		return "move_next_long_word_start"
 	}
 	return "move_next_word_start"
+}
+
+func isPunctuation(r rune) bool {
+	return !unicode.IsSpace(r) && !unicode.IsLetter(r) && !unicode.IsNumber(r)
 }

@@ -63,6 +63,27 @@ func (s *WordMotionTestSuite) TestWordMotion() {
 			expected: buffer.NewPosition(1, 0),
 			bigWord:  false,
 		},
+		{
+			name:     "jump to next word from punctuation",
+			input:    "hello, world",
+			pos:      buffer.NewPosition(0, 5),
+			expected: buffer.NewPosition(0, 7),
+			bigWord:  false,
+		},
+		{
+			name:     "jump to next punctuation from punctuation",
+			input:    "hello,, world",
+			pos:      buffer.NewPosition(0, 5),
+			expected: buffer.NewPosition(0, 6),
+			bigWord:  false,
+		},
+		{
+			name:     "jump to next word from punctuation no space",
+			input:    "hello,beautiful world",
+			pos:      buffer.NewPosition(0, 5),
+			expected: buffer.NewPosition(0, 6),
+			bigWord:  false,
+		},
 	}
 
 	for _, tt := range tests {
