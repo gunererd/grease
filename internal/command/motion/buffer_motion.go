@@ -20,7 +20,7 @@ func (m *StartOfBufferMotion) Calculate(lines []string, pos types.Position) type
 }
 
 func (m *StartOfBufferMotion) Name() string {
-	return "gg"
+	return "move_to_buffer_start"
 }
 
 // EndOfBufferMotion moves cursor to last line of buffer
@@ -39,5 +39,5 @@ func (m *EndOfBufferMotion) Calculate(lines []string, pos types.Position) types.
 }
 
 func (m *EndOfBufferMotion) Name() string {
-	return "G"
+	return "move_to_buffer_end"
 }

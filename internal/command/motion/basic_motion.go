@@ -103,7 +103,7 @@ func (m *DownMotion) Name() string {
 	return "move_line_down"
 }
 
-func CreateBasicMotionCommand(motion Motion, cursorID int) func(types.Editor) types.Editor {
+func CreateMotionCommand(motion Motion, cursorID int) func(types.Editor) types.Editor {
 	return func(e types.Editor) types.Editor {
 		buf := e.Buffer()
 		cursor, err := buf.GetCursor(cursorID)
@@ -111,7 +111,7 @@ func CreateBasicMotionCommand(motion Motion, cursorID int) func(types.Editor) ty
 			return e
 		}
 		pos := cursor.GetPosition()
-		log.Printf("type:<CreateBasicMotionCommand>, name:<%s>, cursorID:<%d>, pos:<%v>\n", motion.Name(), cursorID, pos)
+		log.Printf("type:<CreateMotionCommand>, name:<%s>, cursorID:<%d>, pos:<%v>\n", motion.Name(), cursorID, pos)
 		cmd := NewMotionCommand(motion, cursorID)
 		return cmd.Execute(e)
 	}

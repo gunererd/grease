@@ -59,7 +59,7 @@ func (m *WordEndMotion) Calculate(lines []string, pos types.Position) types.Posi
 
 func (m *WordEndMotion) Name() string {
 	if m.bigWord {
-		return "move_next_word_end"
+		return "move_next_long_word_end"
 	}
-	return "move_next_long_word_end"
+	return "move_next_word_end"
 }
