@@ -20,12 +20,20 @@ type NormalMode struct {
 func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode {
 
 	// Vim style Jump to beginning of buffer
-	kt.Add([]string{"g", "g"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"g", "g"}, keytree.KeyAction{
 		Before: func(e types.Editor) types.Editor {
 			e.Buffer().ClearCursors()
 			return e
 		},
-		Execute: motion.CreateBasicMotionCommand(motion.NewStartOfBufferMotion(), 0),
+		Execute: motion.CreateMotionCommand(motion.NewStartOfBufferMotion(), 0),
+	})
+
+	kt.Add(state.NormalMode, []string{"g", "e"}, keytree.KeyAction{
+		Before: func(e types.Editor) types.Editor {
+			e.Buffer().ClearCursors()
+			return e
+		},
+		Execute: motion.CreateMotionCommand(motion.NewEndOfBufferMotion(), 0),
 	})
 
 	// // Undo command
@@ -89,24 +97,24 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 	// })
 
 	// Word motion commands - yank
-	kt.Add([]string{"y", "w"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"y", "w"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordMotion(false), register).Execute,
 	})
-	kt.Add([]string{"y", "W"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"y", "W"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordMotion(true), register).Execute,
 	})
 
-	kt.Add([]string{"y", "e"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"y", "e"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordEndMotion(false), register).Execute,
 	})
-	kt.Add([]string{"y", "E"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"y", "E"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordEndMotion(true), register).Execute,
 	})
 
-	kt.Add([]string{"y", "b"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"y", "b"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordBackMotion(false), register).Execute,
 	})
-	kt.Add([]string{"y", "B"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"y", "B"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordBackMotion(true), register).Execute,
 	})
 
@@ -142,29 +150,30 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		if err != nil {
 			return e, nil
 		}
-		motion.CreateBasicMotionCommand(motion.NewDownMotion(), cursor.ID())(e)
+		cmd := motion.CreateMotionCommand(motion.NewDownMotion(), cursor.ID())
+		cmd(e)
 	case "h":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateBasicMotionCommand(motion.NewLeftMotion(), cursor.ID())
+			cmd := motion.CreateMotionCommand(motion.NewLeftMotion(), cursor.ID())
 			cmd(e)
 		}
 	case "l":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateBasicMotionCommand(motion.NewRightMotion(), cursor.ID())
+			cmd := motion.CreateMotionCommand(motion.NewRightMotion(), cursor.ID())
 			cmd(e)
 		}
 	case "j":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateBasicMotionCommand(motion.NewDownMotion(), cursor.ID())
+			cmd := motion.CreateMotionCommand(motion.NewDownMotion(), cursor.ID())
 			cmd(e)
 		}
 	case "k":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateBasicMotionCommand(motion.NewUpMotion(), cursor.ID())
+			cmd := motion.CreateMotionCommand(motion.NewUpMotion(), cursor.ID())
 			cmd(e)
 		}
 	case "i":
@@ -175,52 +184,55 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		e.SetMode(state.CommandMode)
 	case "q":
 		return e, tea.Quit
-	case "G":
-		e.Buffer().ClearCursors()
-		cursor, err := e.Buffer().GetPrimaryCursor()
-		if err != nil {
-			return e, nil
-		}
-		motion.CreateBasicMotionCommand(motion.NewEndOfBufferMotion(), cursor.ID())
 	case "$":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			motion.CreateBasicMotionCommand(motion.NewEndOfLineMotion(), cursor.ID())
+			cmd := motion.CreateMotionCommand(motion.NewEndOfLineMotion(), cursor.ID())
+			cmd(e)
 		}
 	case "^", "0":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			motion.CreateBasicMotionCommand(motion.NewStartOfLineMotion(), cursor.ID())
+			cmd := motion.CreateMotionCommand(motion.NewStartOfLineMotion(), cursor.ID())
+			cmd(e)
 		}
+
+		_ = 5
 	case "w":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			CreateWordMotionCommand(false, cursor.ID()).Execute(e)
+			cmd := motion.CreateMotionCommand(motion.NewWordMotion(false), cursor.ID())
+			cmd(e)
 		}
 	case "W":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			CreateWordMotionCommand(true, cursor.ID()).Execute(e)
+			cmd := motion.CreateMotionCommand(motion.NewWordMotion(true), cursor.ID())
+			cmd(e)
 		}
 	case "e":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			CreateWordEndMotionCommand(false, cursor.ID()).Execute(e)
+			cmd := motion.CreateMotionCommand(motion.NewWordEndMotion(false), cursor.ID())
+			cmd(e)
 		}
 	case "E":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			CreateWordEndMotionCommand(true, cursor.ID()).Execute(e)
+			cmd := motion.CreateMotionCommand(motion.NewWordEndMotion(true), cursor.ID())
+			cmd(e)
 		}
 	case "b":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			CreateWordBackMotionCommand(false, cursor.ID()).Execute(e)
+			cmd := motion.CreateMotionCommand(motion.NewWordBackMotion(false), cursor.ID())
+			cmd(e)
 		}
 	case "B":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			CreateWordBackMotionCommand(true, cursor.ID()).Execute(e)
+			cmd := motion.CreateMotionCommand(motion.NewWordBackMotion(true), cursor.ID())
+			cmd(e)
 		}
 		// case "p":
 		// 	cursors := e.Buffer().GetCursors()

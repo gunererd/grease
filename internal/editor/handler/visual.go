@@ -21,12 +21,12 @@ type VisualMode struct {
 
 func NewVisualMode(kt *keytree.KeyTree, register *register.Register) *VisualMode {
 
-	kt.Add([]string{"g", "g"}, keytree.KeyAction{
+	kt.Add(state.VisualMode, []string{"g", "g"}, keytree.KeyAction{
 		Before: func(e types.Editor) types.Editor {
 			e.Buffer().ClearCursors()
 			return e
 		},
-		Execute: motion.CreateBasicMotionCommand(motion.NewStartOfBufferMotion(), -1),
+		Execute: motion.CreateMotionCommand(motion.NewStartOfBufferMotion(), -1),
 	})
 
 	return &VisualMode{
@@ -68,24 +68,24 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		vm.cleanup(e)
 		e.SetMode(state.NormalMode)
 	case "h":
-		model = motion.CreateBasicMotionCommand(motion.NewLeftMotion(), cursor.ID())(e)
+		model = motion.CreateMotionCommand(motion.NewLeftMotion(), cursor.ID())(e)
 	case "l":
-		model = motion.CreateBasicMotionCommand(motion.NewRightMotion(), cursor.ID())(e)
+		model = motion.CreateMotionCommand(motion.NewRightMotion(), cursor.ID())(e)
 	case "j":
-		model = motion.CreateBasicMotionCommand(motion.NewDownMotion(), cursor.ID())(e)
+		model = motion.CreateMotionCommand(motion.NewDownMotion(), cursor.ID())(e)
 	case "k":
-		model = motion.CreateBasicMotionCommand(motion.NewUpMotion(), cursor.ID())(e)
+		model = motion.CreateMotionCommand(motion.NewUpMotion(), cursor.ID())(e)
 	case "G":
-		model = motion.CreateBasicMotionCommand(motion.NewEndOfBufferMotion(), cursor.ID())(e)
+		model = motion.CreateMotionCommand(motion.NewEndOfBufferMotion(), cursor.ID())(e)
 	case "i":
 		vm.cleanup(e)
 		e.SetMode(state.InsertMode)
 	case "q":
 		return e, tea.Quit
 	case "$":
-		motion.CreateBasicMotionCommand(motion.NewEndOfLineMotion(), cursor.ID())
+		motion.CreateMotionCommand(motion.NewEndOfLineMotion(), cursor.ID())
 	case "^", "0":
-		motion.CreateBasicMotionCommand(motion.NewStartOfLineMotion(), cursor.ID())
+		motion.CreateMotionCommand(motion.NewStartOfLineMotion(), cursor.ID())
 	case "w":
 
 		CreateWordMotionCommand(false, cursor.ID()).Execute(e)

@@ -3,6 +3,7 @@ package keytree
 import (
 	"time"
 
+	"github.com/gunererd/grease/internal/state"
 	"github.com/gunererd/grease/internal/types"
 )
 
@@ -21,27 +22,33 @@ type KeyNode struct {
 
 // KeyTree manages key sequences
 type KeyTree struct {
-	root    *KeyNode
+	roots   map[state.Mode]*KeyNode
 	current *KeyNode
 	timeout time.Duration
 	lastKey time.Time
+	mode    state.Mode
 }
 
 // NewKeyTree creates a new KeyTree with default timeout of 1 second
 func NewKeyTree() *KeyTree {
 	return &KeyTree{
-		root:    &KeyNode{children: make(map[string]*KeyNode)},
+		roots:   make(map[state.Mode]*KeyNode),
 		timeout: time.Second * 1,
 	}
 }
 
-// Add registers a new key sequence with action
-func (kt *KeyTree) Add(sequence []string, action KeyAction) {
+// Add registers a new key sequence with action for a specific mode
+func (kt *KeyTree) Add(mode state.Mode, sequence []string, action KeyAction) {
 	if len(sequence) == 0 {
 		return
 	}
 
-	node := kt.root
+	// Initialize root node for mode if it doesn't exist
+	if kt.roots[mode] == nil {
+		kt.roots[mode] = &KeyNode{children: make(map[string]*KeyNode)}
+	}
+
+	node := kt.roots[mode]
 	for _, key := range sequence {
 		if node.children[key] == nil {
 			node.children[key] = &KeyNode{children: make(map[string]*KeyNode)}
@@ -51,26 +58,37 @@ func (kt *KeyTree) Add(sequence []string, action KeyAction) {
 	node.action = &action
 }
 
-// handled: true if the key was consumed as part of a sequence (whether complete or partial)
-// handled: false if the key doesn't match any sequence
+// SetMode updates the current mode and resets the current node
+func (kt *KeyTree) SetMode(mode state.Mode) {
+	kt.mode = mode
+	kt.current = nil
+}
+
+// Handle processes a key press for the current mode
 func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types.Editor) {
 	now := time.Now()
 
 	// Reset if timeout exceeded
 	if kt.current != nil && now.Sub(kt.lastKey) > kt.timeout {
-		kt.current = kt.root
+		kt.current = nil
+	}
+
+	// Get root node for current mode
+	root := kt.roots[kt.mode]
+	if root == nil {
+		return false, e
 	}
 
 	// Start from root if no current node
 	if kt.current == nil {
-		kt.current = kt.root
+		kt.current = root
 	}
 
 	// Traverse a branch
 	next := kt.current.children[key]
 	if next == nil {
 		// Key doesn't match any sequence from branch
-		kt.current = kt.root
+		kt.current = root
 		return false, e
 	}
 
@@ -78,10 +96,10 @@ func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types
 	kt.current = next
 	kt.lastKey = now
 
-	// Check if we've reached an action
+	// Check if we've reached an actio
 	if kt.current.action != nil {
 		action := kt.current.action
-		kt.current = kt.root
+		kt.current = root
 		if action.Before != nil {
 			e = action.Before(e)
 		}
@@ -99,5 +117,5 @@ func (kt *KeyTree) Handle(key string, e types.Editor) (handled bool, model types
 }
 
 func (kt *KeyTree) Reset() {
-	kt.current = kt.root
+	kt.current = kt.roots[kt.mode]
 }
