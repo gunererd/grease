@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"github.com/gunererd/grease/internal/command"
+	"github.com/gunererd/grease/internal/command/change"
 	"github.com/gunererd/grease/internal/command/clipboard"
 	"github.com/gunererd/grease/internal/command/delete"
 	"github.com/gunererd/grease/internal/command/insert"
@@ -101,6 +103,11 @@ func CreateGoToEndOfBufferCommand(cursorID int) Command {
 func CreateDeleteCommand(motion motion.Motion) Command {
 	return delete.NewDeleteCommandAdapter(motion)
 }
+
+func CreateChangeCommand(motion motion.Motion) command.Command {
+	return change.NewChangeCommandAdapter(motion)
+}
+
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {

@@ -133,6 +133,31 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 	kt.Add(state.NormalMode, []string{"d", "B"}, keytree.KeyAction{
 		Execute: CreateDeleteCommand(motion.NewWordBackMotion(true)).Execute,
 	})
+
+	kt.Add(state.NormalMode, []string{"c", "w"}, keytree.KeyAction{
+		Execute: CreateChangeCommand(motion.NewWordMotion(false)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"c", "W"}, keytree.KeyAction{
+		Execute: CreateChangeCommand(motion.NewWordMotion(true)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"c", "e"}, keytree.KeyAction{
+		Execute: CreateChangeCommand(motion.NewWordEndMotion(false)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"c", "E"}, keytree.KeyAction{
+		Execute: CreateChangeCommand(motion.NewWordEndMotion(true)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"c", "b"}, keytree.KeyAction{
+		Execute: CreateChangeCommand(motion.NewWordBackMotion(false)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"c", "B"}, keytree.KeyAction{
+		Execute: CreateChangeCommand(motion.NewWordBackMotion(true)).Execute,
+	})
+
 	// Word motion commands - yank
 	kt.Add(state.NormalMode, []string{"y", "w"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordMotion(false), register).Execute,
