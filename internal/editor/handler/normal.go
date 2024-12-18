@@ -142,17 +142,12 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history typ
 	}
 }
 
-func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
+func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 
-	if handled, e := h.keytree.Handle(msg.String(), e); handled {
+	if handled, e := nm.keytree.Handle(msg.String(), e); handled {
 		e.HandleCursorMovement()
 		return e, nil
 	}
-
-	// cursor, err := e.Buffer().GetPrimaryCursor()
-	// if err != nil {
-	// 	return e, nil
-	// }
 
 	switch msg.String() {
 	case "ctrl+c":
@@ -241,45 +236,61 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 			e = CreateMotionCommand(motion.NewWordBackMotion(true), cursor.ID()).Execute(e)
 		}
 	case "o":
-		e = CreateNewLineCommand(false, h.history).Execute(e)
+		e = CreateNewLineCommand(false, nm.history).Execute(e)
 	case "O":
-		e = CreateNewLineCommand(true, h.history).Execute(e)
+		e = CreateNewLineCommand(true, nm.history).Execute(e)
 	case "D":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateDeleteToEndOfLineCommand(cursor.ID(), h.history).Execute(e)
+			e = CreateDeleteToEndOfLineCommand(cursor.ID(), nm.history).Execute(e)
 		}
 	case "C":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateChangeToEndOfLineCommand(cursor.ID(), h.history).Execute(e)
+			e = CreateChangeToEndOfLineCommand(cursor.ID(), nm.history).Execute(e)
 		}
 
 	case "a":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateAppendCommand(false, cursor.ID(), h.history).Execute(e)
+			e = CreateAppendCommand(false, cursor.ID(), nm.history).Execute(e)
 		}
 	case "A":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateAppendCommand(true, cursor.ID(), h.history).Execute(e)
+			e = CreateAppendCommand(true, cursor.ID(), nm.history).Execute(e)
 		}
 
 	case "i":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateInsertCommand(false, cursor.ID(), h.history).Execute(e)
+			e = CreateInsertCommand(false, cursor.ID(), nm.history).Execute(e)
 		}
 	case "I":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateInsertCommand(true, cursor.ID(), h.history).Execute(e)
+			e = CreateInsertCommand(true, cursor.ID(), nm.history).Execute(e)
 		}
+	case "p":
+		e.Buffer().ClearCursors()
+		cursor, err := e.Buffer().GetPrimaryCursor()
+		if err != nil {
+			log.Println("Failed to get primary cursor:", err)
+			return e, nil
+		}
+		e = CreatePasteCommand(cursor.ID(), nm.register, false, nm.history).Execute(e)
+	case "P":
+		e.Buffer().ClearCursors()
+		cursor, err := e.Buffer().GetPrimaryCursor()
+		if err != nil {
+			log.Println("Failed to get primary cursor:", err)
+			return e, nil
+		}
+		e = CreatePasteCommand(cursor.ID(), nm.register, true, nm.history).Execute(e)
 	case "u":
-		e = h.history.Undo(e)
+		e = nm.history.Undo(e)
 	case "ctrl+r":
-		e = h.history.Redo(e)
+		e = nm.history.Redo(e)
 	}
 
 	e.HandleCursorMovement()

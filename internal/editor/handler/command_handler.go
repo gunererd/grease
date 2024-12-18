@@ -68,8 +68,8 @@ func CreateYankCommand(motion motion.Motion, register *register.Register) Comman
 	return clipboard.NewYankCommandAdapter(motion, register)
 }
 
-func CreatePasteCommand(motion motion.Motion, register *register.Register, before bool, history types.HistoryManager) Command {
-	cmd := clipboard.NewPasteCommandAdapter(motion, register, before)
+func CreatePasteCommand(cursorID int, register *register.Register, before bool, history types.HistoryManager) Command {
+	cmd := clipboard.NewPasteCommandAdapter(cursorID, register, before)
 	return command.NewHistoryAwareCommand(cmd, history)
 }
 
