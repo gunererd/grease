@@ -316,6 +316,17 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		for _, cursor := range cursors {
 			e = CreateChangeToEndOfLineCommand(cursor.ID()).Execute(e)
 		}
+
+	case "a":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			e = CreateAppendCommand(false, cursor.ID()).Execute(e)
+		}
+	case "A":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			e = CreateAppendCommand(true, cursor.ID()).Execute(e)
+		}
 	}
 
 	e.HandleCursorMovement()

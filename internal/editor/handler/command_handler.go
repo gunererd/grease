@@ -116,6 +116,10 @@ func CreateChangeToEndOfLineCommand(cursorID int) command.Command {
 	return change.NewChangeToEndOfLineCommand(cursorID)
 }
 
+func CreateAppendCommand(endOfLine bool, cursorID int) Command {
+	return insert.NewAppendCommand(endOfLine, cursorID)
+}
+
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {
