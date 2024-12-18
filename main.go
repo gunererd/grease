@@ -12,6 +12,7 @@ import (
 	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/editor"
 	"github.com/gunererd/grease/internal/highlight"
+	"github.com/gunererd/grease/internal/history"
 	ioManager "github.com/gunererd/grease/internal/io"
 	"github.com/gunererd/grease/internal/keytree"
 	"github.com/gunererd/grease/internal/register"
@@ -38,14 +39,15 @@ func main() {
 	}
 
 	kt := keytree.NewKeyTree()
-	manager := ioManager.NewManager(ioManager.NewStdinSource(), ioManager.NewStdoutSink())
-	highlightManager := highlight.NewManager()
+	manager := ioManager.New(ioManager.NewStdinSource(), ioManager.NewStdoutSink())
+	highlightManager := highlight.New()
 	buffer := buffer.New()
 	statusLine := ui.NewStatusLine()
 	viewport := ui.NewViewport(0, 0)
 	viewport.SetHighlightManager(highlightManager)
 	register := register.NewRegister()
-	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, register)
+	historyManager := history.New(100)
+	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, historyManager, register)
 
 	// Check for file input first
 	if *filename != "" {

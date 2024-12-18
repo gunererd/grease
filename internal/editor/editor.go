@@ -36,7 +36,7 @@ func New(
 	wp types.Viewport,
 	hlm types.HighlightManager,
 	kt *keytree.KeyTree,
-	// hm types.HistoryManager,
+	hm types.HistoryManager,
 	// om types.OperationManager,
 	register *register.Register,
 ) *Editor {
@@ -48,12 +48,12 @@ func New(
 		showLineNumbers: true,
 		statusLine:      sl,
 		handlers: map[state.Mode]types.ModeHandler{
-			state.NormalMode: handler.NewNormalMode(kt, register),
+			state.NormalMode: handler.NewNormalMode(kt, register, hm),
 			state.InsertMode: handler.NewInsertMode(),
 			state.VisualMode: handler.NewVisualMode(kt, register, hlm),
 		},
 		highlightManager: hlm,
-		// historyManager:   hm,
+		historyManager:   hm,
 	}
 	return e
 }

@@ -14,10 +14,10 @@ import (
 type NormalMode struct {
 	keytree  *keytree.KeyTree
 	register *register.Register
-	// history types.HistoryManager
+	history  types.HistoryManager
 }
 
-func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode {
+func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history types.HistoryManager) *NormalMode {
 
 	// Vim style Jump to beginning of buffer
 	kt.Add(state.NormalMode, []string{"g", "g"}, keytree.KeyAction{
@@ -198,7 +198,7 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 	return &NormalMode{
 		keytree:  kt,
 		register: register,
-		// history: history,
+		history:  history,
 	}
 }
 
@@ -336,6 +336,10 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		for _, cursor := range cursors {
 			e = CreateInsertCommand(true, cursor.ID()).Execute(e)
 		}
+	case "u":
+		e = h.history.Undo(e)
+	case "ctrl+r":
+		e = h.history.Redo(e)
 	}
 
 	e.HandleCursorMovement()
