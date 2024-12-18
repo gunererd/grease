@@ -12,8 +12,8 @@ type Manager struct {
 	mu     sync.RWMutex
 }
 
-// NewManager creates a new IO manager with the given source and sink
-func NewManager(source Source, sink Sink) *Manager {
+// New creates a new IO manager with the given source and sink
+func New(source Source, sink Sink) *Manager {
 	return &Manager{
 		source: source,
 		sink:   sink,

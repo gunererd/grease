@@ -14,8 +14,8 @@ type Manager struct {
 	mu         sync.RWMutex
 }
 
-// NewManager creates a new highlight manager
-func NewManager() types.HighlightManager {
+// New creates a new highlight manager
+func New() types.HighlightManager {
 	return &Manager{
 		highlights: make(map[int]types.Highlight),
 		nextID:     1,
@@ -34,7 +34,7 @@ func (m *Manager) Add(h types.Highlight) int {
 		h.GetType(),
 		h.GetPriority(),
 	)
-	
+
 	// Set the ID
 	id := m.nextID
 	m.highlights[id] = newHighlight
@@ -135,7 +135,7 @@ func (m *Manager) Update(id int, h types.Highlight) bool {
 		h.GetType(),
 		h.GetPriority(),
 	)
-	
+
 	m.highlights[id] = newHighlight
 	return true
 }
