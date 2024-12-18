@@ -46,7 +46,7 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history typ
 				log.Println("Failed to get primary cursor:", err)
 				return e
 			}
-			return CreateDeleteLineCommand(cursor.ID()).Execute(e)
+			return CreateDeleteLineCommand(cursor.ID(), history).Execute(e)
 		},
 	})
 
@@ -61,116 +61,56 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history typ
 				log.Println("Failed to get primary cursor:", err)
 				return e
 			}
-			return CreateChangeLineCommand(cursor.ID()).Execute(e)
+			return CreateChangeLineCommand(cursor.ID(), history).Execute(e)
 		},
 	})
 
-	// // Undo command
-	// kt.Add([]string{"u"}, keytree.KeyAction{
-	// 	Execute: func(e types.Editor) types.Editor {
-	// 		return history.Undo(e)
-	// 	},
-	// })
-
-	// // Redo command
-	// kt.Add([]string{"ctrl+r"}, keytree.KeyAction{
-	// 	Execute: func(e types.Editor) types.Editor {
-	// 		return history.Redo(e)
-	// 	},
-	// })
-
-	// Word motion commands - change
-	// kt.Add([]string{"c", "w"}, keytree.KeyAction{
-	// 	Execute: CreateWordMotionCommand(false, NewHistoryAwareOperation(NewChangeOperation(), history)),
-	// })
-	// kt.Add([]string{"c", "W"}, keytree.KeyAction{
-	// 	Execute: CreateWordMotionCommand(true, NewHistoryAwareOperation(NewChangeOperation(), history)),
-	// })
-
-	// kt.Add([]string{"c", "e"}, keytree.KeyAction{
-	// 	Execute: CreateWordEndMotionCommand(false, NewHistoryAwareOperation(NewChangeOperation(), history)),
-	// })
-
-	// kt.Add([]string{"c", "E"}, keytree.KeyAction{
-	// 	Execute: CreateWordEndMotionCommand(true, NewHistoryAwareOperation(NewChangeOperation(), history)),
-	// })
-
-	// kt.Add([]string{"c", "b"}, keytree.KeyAction{
-	// 	Execute: CreateWordBackMotionCommand(false, NewHistoryAwareOperation(NewChangeOperation(), history)),
-	// })
-	// kt.Add([]string{"c", "B"}, keytree.KeyAction{
-	// 	Execute: CreateWordBackMotionCommand(true, NewHistoryAwareOperation(NewChangeOperation(), history)),
-	// })
-
-	// // Word motion commands - delete
-	// kt.Add([]string{"d", "w"}, keytree.KeyAction{
-	// 	Execute: CreateWordMotionCommand(false, NewHistoryAwareOperation(NewDeleteOperation(), history)),
-	// })
-	// kt.Add([]string{"d", "W"}, keytree.KeyAction{
-	// 	Execute: CreateWordMotionCommand(true, NewHistoryAwareOperation(NewDeleteOperation(), history)),
-	// })
-
-	// kt.Add([]string{"d", "e"}, keytree.KeyAction{
-	// 	Execute: CreateWordEndMotionCommand(false, NewHistoryAwareOperation(NewDeleteOperation(), history)),
-	// })
-
-	// kt.Add([]string{"d", "E"}, keytree.KeyAction{
-	// 	Execute: CreateWordEndMotionCommand(true, NewHistoryAwareOperation(NewDeleteOperation(), history)),
-	// })
-
-	// kt.Add([]string{"d", "b"}, keytree.KeyAction{
-	// 	Execute: CreateWordBackMotionCommand(false, NewHistoryAwareOperation(NewDeleteOperation(), history)),
-	// })
-	// kt.Add([]string{"d", "B"}, keytree.KeyAction{
-	// 	Execute: CreateWordBackMotionCommand(true, NewHistoryAwareOperation(NewDeleteOperation(), history)),
-	// })
-
 	kt.Add(state.NormalMode, []string{"d", "w"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordMotion(false)).Execute,
+		Execute: CreateDeleteCommand(motion.NewWordMotion(false), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "W"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordMotion(true)).Execute,
+		Execute: CreateDeleteCommand(motion.NewWordMotion(true), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "e"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordEndMotion(false)).Execute,
+		Execute: CreateDeleteCommand(motion.NewWordEndMotion(false), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "E"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordEndMotion(true)).Execute,
+		Execute: CreateDeleteCommand(motion.NewWordEndMotion(true), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "b"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordBackMotion(false)).Execute,
+		Execute: CreateDeleteCommand(motion.NewWordBackMotion(false), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "B"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordBackMotion(true)).Execute,
+		Execute: CreateDeleteCommand(motion.NewWordBackMotion(true), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "w"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordMotion(false)).Execute,
+		Execute: CreateChangeCommand(motion.NewWordMotion(false), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "W"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordMotion(true)).Execute,
+		Execute: CreateChangeCommand(motion.NewWordMotion(true), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "e"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordEndMotion(false)).Execute,
+		Execute: CreateChangeCommand(motion.NewWordEndMotion(false), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "E"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordEndMotion(true)).Execute,
+		Execute: CreateChangeCommand(motion.NewWordEndMotion(true), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "b"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordBackMotion(false)).Execute,
+		Execute: CreateChangeCommand(motion.NewWordBackMotion(false), history).Execute,
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "B"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordBackMotion(true)).Execute,
+		Execute: CreateChangeCommand(motion.NewWordBackMotion(true), history).Execute,
 	})
 
 	// Word motion commands - yank
@@ -301,40 +241,40 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 			e = CreateMotionCommand(motion.NewWordBackMotion(true), cursor.ID()).Execute(e)
 		}
 	case "o":
-		e = CreateNewLineCommand(false).Execute(e)
+		e = CreateNewLineCommand(false, h.history).Execute(e)
 	case "O":
-		e = CreateNewLineCommand(true).Execute(e)
+		e = CreateNewLineCommand(true, h.history).Execute(e)
 	case "D":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateDeleteToEndOfLineCommand(cursor.ID()).Execute(e)
+			e = CreateDeleteToEndOfLineCommand(cursor.ID(), h.history).Execute(e)
 		}
 	case "C":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateChangeToEndOfLineCommand(cursor.ID()).Execute(e)
+			e = CreateChangeToEndOfLineCommand(cursor.ID(), h.history).Execute(e)
 		}
 
 	case "a":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateAppendCommand(false, cursor.ID()).Execute(e)
+			e = CreateAppendCommand(false, cursor.ID(), h.history).Execute(e)
 		}
 	case "A":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateAppendCommand(true, cursor.ID()).Execute(e)
+			e = CreateAppendCommand(true, cursor.ID(), h.history).Execute(e)
 		}
 
 	case "i":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateInsertCommand(false, cursor.ID()).Execute(e)
+			e = CreateInsertCommand(false, cursor.ID(), h.history).Execute(e)
 		}
 	case "I":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateInsertCommand(true, cursor.ID()).Execute(e)
+			e = CreateInsertCommand(true, cursor.ID(), h.history).Execute(e)
 		}
 	case "u":
 		e = h.history.Undo(e)

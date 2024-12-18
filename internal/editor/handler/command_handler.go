@@ -68,8 +68,9 @@ func CreateYankCommand(motion motion.Motion, register *register.Register) Comman
 	return clipboard.NewYankCommandAdapter(motion, register)
 }
 
-func CreatePasteCommand(motion motion.Motion, register *register.Register, before bool) Command {
-	return clipboard.NewPasteCommandAdapter(motion, register, before)
+func CreatePasteCommand(motion motion.Motion, register *register.Register, before bool, history types.HistoryManager) Command {
+	cmd := clipboard.NewPasteCommandAdapter(motion, register, before)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
 func CreateGoToStartOfLineCommand(cursorID int) Command {
@@ -80,16 +81,19 @@ func CreateGoToEndOfLineCommand(cursorID int) Command {
 	return CreateMotionCommand(motion.NewEndOfLineMotion(), cursorID)
 }
 
-func CreateNewLineCommand(before bool) Command {
-	return insert.NewNewLineCommand(before)
+func CreateNewLineCommand(before bool, history types.HistoryManager) Command {
+	cmd := insert.NewNewLineCommand(before)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
-func CreateDeleteToEndOfLineCommand(cursorID int) Command {
-	return delete.NewDeleteToEndOfLineCommand(cursorID)
+func CreateDeleteToEndOfLineCommand(cursorID int, history types.HistoryManager) Command {
+	cmd := delete.NewDeleteToEndOfLineCommand(cursorID)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
-func CreateDeleteLineCommand(cursorID int) Command {
-	return delete.NewDeleteLineCommand(cursorID)
+func CreateDeleteLineCommand(cursorID int, history types.HistoryManager) Command {
+	cmd := delete.NewDeleteLineCommand(cursorID)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
 func CreateGoToStartOfBufferCommand(cursorID int) Command {
@@ -100,28 +104,34 @@ func CreateGoToEndOfBufferCommand(cursorID int) Command {
 	return CreateMotionCommand(motion.NewEndOfBufferMotion(), cursorID)
 }
 
-func CreateDeleteCommand(motion motion.Motion) Command {
-	return delete.NewDeleteCommandAdapter(motion)
+func CreateDeleteCommand(motion motion.Motion, history types.HistoryManager) Command {
+	cmd := delete.NewDeleteCommandAdapter(motion)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
-func CreateChangeCommand(motion motion.Motion) command.Command {
-	return change.NewChangeCommandAdapter(motion)
+func CreateChangeCommand(motion motion.Motion, history types.HistoryManager) Command {
+	cmd := change.NewChangeCommandAdapter(motion)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
-func CreateChangeLineCommand(cursorID int) command.Command {
-	return change.NewChangeLineCommand(cursorID)
+func CreateChangeLineCommand(cursorID int, history types.HistoryManager) Command {
+	cmd := change.NewChangeLineCommand(cursorID)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
-func CreateChangeToEndOfLineCommand(cursorID int) command.Command {
-	return change.NewChangeToEndOfLineCommand(cursorID)
+func CreateChangeToEndOfLineCommand(cursorID int, history types.HistoryManager) Command {
+	cmd := change.NewChangeToEndOfLineCommand(cursorID)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
-func CreateAppendCommand(endOfLine bool, cursorID int) Command {
-	return insert.NewAppendCommand(endOfLine, cursorID)
+func CreateAppendCommand(endOfLine bool, cursorID int, history types.HistoryManager) Command {
+	cmd := insert.NewAppendCommand(endOfLine, cursorID)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
-func CreateInsertCommand(startOfLine bool, cursorID int) Command {
-	return insert.NewInsertCommand(startOfLine, cursorID)
+func CreateInsertCommand(startOfLine bool, cursorID int, history types.HistoryManager) Command {
+	cmd := insert.NewInsertCommand(startOfLine, cursorID)
+	return command.NewHistoryAwareCommand(cmd, history)
 }
 
 func bufferToLines(buf types.Buffer) []string {
