@@ -17,9 +17,10 @@ type VisualMode struct {
 	highlightID      int
 	operationManager types.OperationManager
 	keytree          *keytree.KeyTree
+	hlm              types.HighlightManager
 }
 
-func NewVisualMode(kt *keytree.KeyTree, register *register.Register) *VisualMode {
+func NewVisualMode(kt *keytree.KeyTree, register *register.Register, hlm types.HighlightManager) *VisualMode {
 
 	kt.Add(state.VisualMode, []string{"g", "g"}, keytree.KeyAction{
 		Before: func(e types.Editor) types.Editor {

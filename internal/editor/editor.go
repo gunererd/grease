@@ -50,9 +50,9 @@ func New(
 		handlers: map[state.Mode]types.ModeHandler{
 			state.NormalMode: handler.NewNormalMode(kt, register),
 			state.InsertMode: handler.NewInsertMode(),
-			state.VisualMode: handler.NewVisualMode(kt, register),
+			state.VisualMode: handler.NewVisualMode(kt, register, hlm),
 		},
-		// highlightManager: hlm,
+		highlightManager: hlm,
 		// historyManager:   hm,
 	}
 	return e

@@ -127,12 +127,9 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 
 func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 
-	model := e
-
-	// Handle key sequences
-	if handled, model := h.keytree.Handle(msg.String(), e); handled {
+	if handled, e := h.keytree.Handle(msg.String(), e); handled {
 		e.HandleCursorMovement()
-		return model, nil
+		return e, nil
 	}
 
 	// cursor, err := e.Buffer().GetPrimaryCursor()
@@ -155,26 +152,22 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	case "h":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewLeftMotion(), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewLeftMotion(), cursor.ID()).Execute(e)
 		}
 	case "l":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewRightMotion(), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewRightMotion(), cursor.ID()).Execute(e)
 		}
 	case "j":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewDownMotion(), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewDownMotion(), cursor.ID()).Execute(e)
 		}
 	case "k":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewUpMotion(), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewUpMotion(), cursor.ID()).Execute(e)
 		}
 	case "i":
 		e.SetMode(state.InsertMode)
@@ -187,62 +180,50 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	case "$":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewEndOfLineMotion(), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewEndOfLineMotion(), cursor.ID()).Execute(e)
 		}
 	case "^", "0":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewStartOfLineMotion(), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewStartOfLineMotion(), cursor.ID()).Execute(e)
 		}
-
-		_ = 5
 	case "w":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewWordMotion(false), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewWordMotion(false), cursor.ID()).Execute(e)
 		}
 	case "W":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewWordMotion(true), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewWordMotion(true), cursor.ID()).Execute(e)
 		}
 	case "e":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewWordEndMotion(false), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewWordEndMotion(false), cursor.ID()).Execute(e)
 		}
 	case "E":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewWordEndMotion(true), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewWordEndMotion(true), cursor.ID()).Execute(e)
 		}
 	case "b":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewWordBackMotion(false), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewWordBackMotion(false), cursor.ID()).Execute(e)
 		}
 	case "B":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			cmd := motion.CreateMotionCommand(motion.NewWordBackMotion(true), cursor.ID())
-			cmd(e)
+			e = CreateMotionCommand(motion.NewWordBackMotion(true), cursor.ID()).Execute(e)
 		}
-		// case "p":
-		// 	cursors := e.Buffer().GetCursors()
-		// 	for _, cursor := range cursors {
-		// 		CreatePasteCommand(motion.NewWordMotion(false), h.register, false).Execute(e)
-		// 	}
-		// case "P":
-		// 	model = CreatePasteCommand(motion.NewWordMotion(true), h.register, true).Execute(e)
+	case "o":
+		e = CreateNewLineCommand(false).Execute(e)
+	case "O":
+		e = CreateNewLineCommand(true).Execute(e)
 	}
 
 	e.HandleCursorMovement()
-	return model, nil
+
+	return e, nil
 }
