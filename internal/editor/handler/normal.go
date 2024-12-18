@@ -179,6 +179,14 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		e.SetMode(state.CommandMode)
 	case "q":
 		return e, tea.Quit
+	case "G":
+		e.Buffer().ClearCursors()
+		cursor, err := e.Buffer().GetPrimaryCursor()
+		if err != nil {
+			log.Println("Failed to get primary cursor:", err)
+			return e, nil
+		}
+		e = CreateGoToEndOfBufferCommand(cursor.ID()).Execute(e)
 	case "$":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {

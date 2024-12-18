@@ -90,6 +90,14 @@ func CreateDeleteLineCommand(cursorID int) Command {
 	return delete.NewDeleteLineCommand(cursorID)
 }
 
+func CreateGoToStartOfBufferCommand(cursorID int) Command {
+	return CreateMotionCommand(motion.NewStartOfBufferMotion(), cursorID)
+}
+
+func CreateGoToEndOfBufferCommand(cursorID int) Command {
+	return CreateMotionCommand(motion.NewEndOfBufferMotion(), cursorID)
+}
+
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {
