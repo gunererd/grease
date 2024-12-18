@@ -25,7 +25,14 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 			e.Buffer().ClearCursors()
 			return e
 		},
-		Execute: motion.CreateMotionCommand(motion.NewStartOfBufferMotion(), 0),
+		Execute: func(e types.Editor) types.Editor {
+			cursor, err := e.Buffer().GetPrimaryCursor()
+			if err != nil {
+				log.Println("Failed to get primary cursor:", err)
+				return e
+			}
+			return CreateGoToStartOfBufferCommand(cursor.ID()).Execute(e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "d"}, keytree.KeyAction{
@@ -34,7 +41,12 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 			return e
 		},
 		Execute: func(e types.Editor) types.Editor {
-			return CreateDeleteLineCommand(0).Execute(e)
+			cursor, err := e.Buffer().GetPrimaryCursor()
+			if err != nil {
+				log.Println("Failed to get primary cursor:", err)
+				return e
+			}
+			return CreateDeleteLineCommand(cursor.ID()).Execute(e)
 		},
 	})
 
