@@ -246,8 +246,6 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		for _, cursor := range cursors {
 			e = CreateMotionCommand(motion.NewUpMotion(), cursor.ID()).Execute(e)
 		}
-	case "i":
-		e.SetMode(state.InsertMode)
 	case "v":
 		e.SetMode(state.VisualMode)
 	case ":":
@@ -326,6 +324,17 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
 			e = CreateAppendCommand(true, cursor.ID()).Execute(e)
+		}
+
+	case "i":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			e = CreateInsertCommand(false, cursor.ID()).Execute(e)
+		}
+	case "I":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			e = CreateInsertCommand(true, cursor.ID()).Execute(e)
 		}
 	}
 

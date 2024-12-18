@@ -120,6 +120,10 @@ func CreateAppendCommand(endOfLine bool, cursorID int) Command {
 	return insert.NewAppendCommand(endOfLine, cursorID)
 }
 
+func CreateInsertCommand(startOfLine bool, cursorID int) Command {
+	return insert.NewInsertCommand(startOfLine, cursorID)
+}
+
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {
