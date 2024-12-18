@@ -108,6 +108,14 @@ func CreateChangeCommand(motion motion.Motion) command.Command {
 	return change.NewChangeCommandAdapter(motion)
 }
 
+func CreateChangeLineCommand(cursorID int) command.Command {
+	return change.NewChangeLineCommand(cursorID)
+}
+
+func CreateChangeToEndOfLineCommand(cursorID int) command.Command {
+	return change.NewChangeToEndOfLineCommand(cursorID)
+}
+
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {

@@ -50,6 +50,21 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 		},
 	})
 
+	kt.Add(state.NormalMode, []string{"c", "c"}, keytree.KeyAction{
+		Before: func(e types.Editor) types.Editor {
+			e.Buffer().ClearCursors()
+			return e
+		},
+		Execute: func(e types.Editor) types.Editor {
+			cursor, err := e.Buffer().GetPrimaryCursor()
+			if err != nil {
+				log.Println("Failed to get primary cursor:", err)
+				return e
+			}
+			return CreateChangeLineCommand(cursor.ID()).Execute(e)
+		},
+	})
+
 	// // Undo command
 	// kt.Add([]string{"u"}, keytree.KeyAction{
 	// 	Execute: func(e types.Editor) types.Editor {
@@ -202,15 +217,15 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	switch msg.String() {
 	case "ctrl+c":
 		return e, tea.Quit
-	case "C":
-		log.Println("shift+c")
-		buf := e.Buffer()
-		cursor, err := buf.AddCursor()
-		if err != nil {
-			return e, nil
-		}
-		cmd := motion.CreateMotionCommand(motion.NewDownMotion(), cursor.ID())
-		cmd(e)
+	// case "C":
+	// 	log.Println("shift+c")
+	// 	buf := e.Buffer()
+	// 	cursor, err := buf.AddCursor()
+	// 	if err != nil {
+	// 		return e, nil
+	// 	}
+	// 	cmd := motion.CreateMotionCommand(motion.NewDownMotion(), cursor.ID())
+	// 	cmd(e)
 	case "h":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
@@ -295,6 +310,11 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
 			e = CreateDeleteToEndOfLineCommand(cursor.ID()).Execute(e)
+		}
+	case "C":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			e = CreateChangeToEndOfLineCommand(cursor.ID()).Execute(e)
 		}
 	}
 
