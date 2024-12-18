@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/gunererd/grease/internal/command/clipboard"
+	"github.com/gunererd/grease/internal/command/delete"
 	"github.com/gunererd/grease/internal/command/insert"
 	"github.com/gunererd/grease/internal/command/motion"
 	"github.com/gunererd/grease/internal/register"
@@ -69,8 +70,24 @@ func CreatePasteCommand(motion motion.Motion, register *register.Register, befor
 	return clipboard.NewPasteCommandAdapter(motion, register, before)
 }
 
+func CreateGoToStartOfLineCommand(cursorID int) Command {
+	return CreateMotionCommand(motion.NewStartOfLineMotion(), cursorID)
+}
+
+func CreateGoToEndOfLineCommand(cursorID int) Command {
+	return CreateMotionCommand(motion.NewEndOfLineMotion(), cursorID)
+}
+
 func CreateNewLineCommand(before bool) Command {
 	return insert.NewNewLineCommand(before)
+}
+
+func CreateDeleteToEndOfLineCommand(cursorID int) Command {
+	return delete.NewDeleteToEndOfLineCommand(cursorID)
+}
+
+func CreateDeleteLineCommand(cursorID int) Command {
+	return delete.NewDeleteLineCommand(cursorID)
 }
 
 func bufferToLines(buf types.Buffer) []string {

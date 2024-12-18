@@ -28,12 +28,14 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 		Execute: motion.CreateMotionCommand(motion.NewStartOfBufferMotion(), 0),
 	})
 
-	kt.Add(state.NormalMode, []string{"g", "e"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"d", "d"}, keytree.KeyAction{
 		Before: func(e types.Editor) types.Editor {
 			e.Buffer().ClearCursors()
 			return e
 		},
-		Execute: motion.CreateMotionCommand(motion.NewEndOfBufferMotion(), 0),
+		Execute: func(e types.Editor) types.Editor {
+			return CreateDeleteLineCommand(0).Execute(e)
+		},
 	})
 
 	// // Undo command
@@ -180,27 +182,27 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 	case "$":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewEndOfLineMotion(), cursor.ID()).Execute(e)
+			e = CreateGoToEndOfLineCommand(cursor.ID()).Execute(e)
 		}
 	case "^", "0":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewStartOfLineMotion(), cursor.ID()).Execute(e)
+			e = CreateGoToStartOfLineCommand(cursor.ID()).Execute(e)
 		}
 	case "w":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewWordMotion(false), cursor.ID()).Execute(e)
+			e = CreateWordMotionCommand(false, cursor.ID()).Execute(e)
 		}
 	case "W":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewWordMotion(true), cursor.ID()).Execute(e)
+			e = CreateWordMotionCommand(true, cursor.ID()).Execute(e)
 		}
 	case "e":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewWordEndMotion(false), cursor.ID()).Execute(e)
+			e = CreateWordEndMotionCommand(false, cursor.ID()).Execute(e)
 		}
 	case "E":
 		cursors := e.Buffer().GetCursors()
@@ -221,6 +223,11 @@ func (h *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.C
 		e = CreateNewLineCommand(false).Execute(e)
 	case "O":
 		e = CreateNewLineCommand(true).Execute(e)
+	case "D":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			e = CreateDeleteToEndOfLineCommand(cursor.ID()).Execute(e)
+		}
 	}
 
 	e.HandleCursorMovement()
