@@ -98,6 +98,9 @@ func CreateGoToEndOfBufferCommand(cursorID int) Command {
 	return CreateMotionCommand(motion.NewEndOfBufferMotion(), cursorID)
 }
 
+func CreateDeleteCommand(motion motion.Motion) Command {
+	return delete.NewDeleteCommandAdapter(motion)
+}
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {

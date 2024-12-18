@@ -110,6 +110,29 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register) *NormalMode
 	// 	Execute: CreateWordBackMotionCommand(true, NewHistoryAwareOperation(NewDeleteOperation(), history)),
 	// })
 
+	kt.Add(state.NormalMode, []string{"d", "w"}, keytree.KeyAction{
+		Execute: CreateDeleteCommand(motion.NewWordMotion(false)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"d", "W"}, keytree.KeyAction{
+		Execute: CreateDeleteCommand(motion.NewWordMotion(true)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"d", "e"}, keytree.KeyAction{
+		Execute: CreateDeleteCommand(motion.NewWordEndMotion(false)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"d", "E"}, keytree.KeyAction{
+		Execute: CreateDeleteCommand(motion.NewWordEndMotion(true)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"d", "b"}, keytree.KeyAction{
+		Execute: CreateDeleteCommand(motion.NewWordBackMotion(false)).Execute,
+	})
+
+	kt.Add(state.NormalMode, []string{"d", "B"}, keytree.KeyAction{
+		Execute: CreateDeleteCommand(motion.NewWordBackMotion(true)).Execute,
+	})
 	// Word motion commands - yank
 	kt.Add(state.NormalMode, []string{"y", "w"}, keytree.KeyAction{
 		Execute: CreateYankCommand(motion.NewWordMotion(false), register).Execute,
