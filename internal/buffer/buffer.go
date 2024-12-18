@@ -158,7 +158,6 @@ func (b *Buffer) GetLastCursor() (types.Cursor, error) {
 	return b.cursors[len(b.cursors)-1], nil
 }
 
-// RemoveCursor removes a cursor by its ID
 func (b *Buffer) RemoveCursor(id int) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -171,7 +170,6 @@ func (b *Buffer) RemoveCursor(id int) {
 	}
 }
 
-// GetPrimaryCursor returns the highest priority cursor
 func (b *Buffer) GetPrimaryCursor() (types.Cursor, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -179,7 +177,16 @@ func (b *Buffer) GetPrimaryCursor() (types.Cursor, error) {
 	if len(b.cursors) == 0 {
 		return nil, ErrNoCursor
 	}
-	return b.cursors[0], nil
+
+	// Find cursor with highest ID
+	primaryCursor := b.cursors[0]
+	for _, cursor := range b.cursors {
+		if cursor.ID() > primaryCursor.ID() {
+			primaryCursor = cursor
+		}
+	}
+
+	return primaryCursor, nil
 }
 
 func (b *Buffer) GetCursor(id int) (types.Cursor, error) {
@@ -205,7 +212,22 @@ func (b *Buffer) ClearCursors() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.cursors = []types.Cursor{NewCursor(NewPosition(0, 0), 0, 0)}
+	if len(b.cursors) == 0 {
+		// If no cursors exist, create one at 0,0
+		b.cursors = []types.Cursor{NewCursor(NewPosition(0, 0), 0, 0)}
+		return
+	}
+
+	// Find cursor with highest ID
+	primaryCursor := b.cursors[0]
+	for _, cursor := range b.cursors {
+		if cursor.ID() > primaryCursor.ID() {
+			primaryCursor = cursor
+		}
+	}
+
+	// Keep only the primary cursor
+	b.cursors = []types.Cursor{primaryCursor}
 }
 
 // Insert inserts text at all cursor positions
