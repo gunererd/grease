@@ -183,8 +183,6 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		}
 	case "v":
 		e.SetMode(state.VisualMode)
-	case ":":
-		e.SetMode(state.CommandMode)
 	case "q":
 		return e, tea.Quit
 	case "G":
@@ -291,6 +289,21 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		e = nm.history.Undo(e)
 	case "ctrl+r":
 		e = nm.history.Redo(e)
+	case "ctrl+d":
+		e.Buffer().ClearCursors()
+		cursor, err := e.Buffer().GetPrimaryCursor()
+		if err != nil {
+			return e, nil
+		}
+		e = CreateHalfPageDownCommand(cursor.ID(), e.Viewport()).Execute(e)
+	case "ctrl+u":
+		e.Buffer().ClearCursors()
+		cursor, err := e.Buffer().GetPrimaryCursor()
+		if err != nil {
+			return e, nil
+		}
+		e = CreateHalfPageUpCommand(cursor.ID(), e.Viewport()).Execute(e)
+
 	}
 
 	e.HandleCursorMovement()

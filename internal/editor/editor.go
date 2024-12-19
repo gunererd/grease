@@ -156,7 +156,7 @@ func (e *Editor) SetMode(mode state.Mode) {
 // }
 
 func (e *Editor) HandleCursorMovement() {
-	e.Viewport().SyncCursors(e.Buffer().GetCursors())
+	e.Viewport().SyncCursors(e.Buffer().GetCursors(), e.Buffer().LineCount())
 }
 
 // LoadFromStdin loads content from stdin into the buffer

@@ -134,6 +134,14 @@ func CreateInsertCommand(startOfLine bool, cursorID int, history types.HistoryMa
 	return command.NewHistoryAwareCommand(cmd, history)
 }
 
+func CreateHalfPageDownCommand(cursorID int, viewport types.Viewport) Command {
+	return CreateMotionCommand(motion.NewHalfPageDownMotion(viewport), cursorID)
+}
+
+func CreateHalfPageUpCommand(cursorID int, viewport types.Viewport) Command {
+	return CreateMotionCommand(motion.NewHalfPageUpMotion(viewport), cursorID)
+}
+
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {

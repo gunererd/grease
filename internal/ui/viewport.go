@@ -74,23 +74,32 @@ func (vp *Viewport) Offset() types.Position {
 	return vp.offset
 }
 
-// SetScrollOff sets the number of lines to keep visible above/below cursor
-func (vp *Viewport) SetScrollOff(lines int) {
-	vp.scrollOff = lines
+func (vp *Viewport) ScrollOff() int {
+	return vp.scrollOff
 }
 
-// ScrollTo scrolls the viewport to ensure the target position is visible
-func (vp *Viewport) ScrollTo(pos types.Position) {
+func (vp *Viewport) ScrollTo(pos types.Position, bufferLineCount int) {
 	// Vertical scrolling
 	if pos.Line() < vp.offset.Line()+vp.scrollOff {
+		// When scrolling up, respect scrollOff
 		line := int(math.Max(0, float64(pos.Line()-vp.scrollOff)))
 		vp.offset = buffer.NewPosition(line, vp.offset.Column())
 	} else if pos.Line() >= vp.offset.Line()+vp.height-vp.scrollOff {
+		// When scrolling down, check if we're near buffer end
 		line := pos.Line() - vp.height + vp.scrollOff + 1
+
+		// If this would show past buffer end, adjust to show last line at bottom
+		if line+vp.height > bufferLineCount {
+			line = bufferLineCount - vp.height
+			if line < 0 {
+				line = 0
+			}
+		}
+
 		vp.offset = buffer.NewPosition(line, vp.offset.Column())
 	}
 
-	// Horizontal scrolling
+	// Horizontal scrolling (unchanged)
 	if pos.Column() < vp.offset.Column() {
 		col := int(math.Max(0, float64(pos.Column())))
 		vp.offset = buffer.NewPosition(vp.offset.Line(), col)
@@ -101,9 +110,9 @@ func (vp *Viewport) ScrollTo(pos types.Position) {
 }
 
 // SetCursor sets the cursor position
-func (vp *Viewport) SetCursor(pos types.Position) {
+func (vp *Viewport) SetCursor(pos types.Position, bufferLineCount int) {
 	vp.cursor = pos
-	vp.ScrollTo(pos)
+	vp.ScrollTo(pos, bufferLineCount)
 }
 
 // Cursor returns the current cursor position
@@ -451,6 +460,7 @@ func (vp *Viewport) CenterOn(pos types.Position) {
 
 func (vp *Viewport) BufferToViewportPosition(pos types.Position) (x, y int) {
 	return pos.Column() - vp.offset.Column(), pos.Line() - vp.offset.Line()
+
 }
 
 func (vp *Viewport) ViewportToBufferPosition(x, y int) types.Position {
@@ -466,9 +476,22 @@ func (vp *Viewport) ScrollUp(lines int) {
 	vp.offset = buffer.NewPosition(line, vp.offset.Column())
 }
 
-// ScrollDown scrolls the viewport down by the specified number of lines
-func (vp *Viewport) ScrollDown(lines int) {
-	vp.offset = buffer.NewPosition(vp.offset.Line()+lines, vp.offset.Column())
+func (vp *Viewport) ScrollDown(lines int, bufferLineCount int) {
+	// Calculate maximum allowed scroll position that shows last line at bottom of viewport
+	maxLine := bufferLineCount - vp.height
+	if maxLine < 0 {
+		maxLine = 0
+	}
+
+	// Calculate new scroll position
+	newLine := vp.offset.Line() + lines
+
+	// If scrolling would show past buffer end, adjust to show last line at bottom
+	if newLine+vp.height > bufferLineCount {
+		newLine = maxLine
+	}
+
+	vp.offset = buffer.NewPosition(newLine, vp.offset.Column())
 }
 
 // ScrollLeft scrolls the viewport left by the specified number of columns
@@ -481,8 +504,7 @@ func (vp *Viewport) ScrollRight(cols int) {
 	vp.offset = buffer.NewPosition(vp.offset.Line(), vp.offset.Column()+cols)
 }
 
-// Add new methods for cursor management
-func (vp *Viewport) SyncCursors(bufferCursors []types.Cursor) {
+func (vp *Viewport) SyncCursors(bufferCursors []types.Cursor, bufferLineCount int) {
 	vp.cursors = make([]CursorInfo, len(bufferCursors))
 	for i, cursor := range bufferCursors {
 		vp.cursors[i] = CursorInfo{
@@ -495,7 +517,7 @@ func (vp *Viewport) SyncCursors(bufferCursors []types.Cursor) {
 
 	// Ensure at least primary cursor is visible
 	if len(vp.cursors) > 0 {
-		vp.ScrollTo(vp.cursors[0].pos)
+		vp.ScrollTo(vp.cursors[0].pos, bufferLineCount)
 		// Update legacy cursor field temporarily
 		vp.cursor = vp.cursors[0].pos
 	}
@@ -509,4 +531,32 @@ func (vp *Viewport) GetVisibleCursors() []CursorInfo {
 		}
 	}
 	return visible
+}
+
+func (vp *Viewport) ScrollHalfPageUp() {
+	// If we're already at the top, just move cursor to top
+	cursor := vp.cursors[0]
+	if vp.offset.Line() <= 0 {
+		cursor.pos = buffer.NewPosition(0, cursor.pos.Column())
+		vp.cursors[0] = cursor
+		return
+	}
+
+	vp.ScrollUp(vp.height / 2)
+	if !vp.IsPositionVisible(vp.cursors[0].pos) {
+		_, endLine := vp.VisibleLines()
+		// Move cursor to last visible line minus scrollOff
+		cursor.pos = buffer.NewPosition(endLine-vp.scrollOff-1, cursor.pos.Column())
+		vp.cursors[0] = cursor
+	}
+}
+
+func (vp *Viewport) ScrollHalfPageDown(bufferLineCount int) {
+	vp.ScrollDown(vp.height/2, bufferLineCount)
+	cursor := vp.cursors[0]
+	if !vp.IsPositionVisible(cursor.pos) {
+		startLine, _ := vp.VisibleLines()
+		cursor.pos = buffer.NewPosition(startLine+vp.scrollOff, cursor.pos.Column())
+		vp.cursors[0] = cursor
+	}
 }

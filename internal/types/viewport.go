@@ -8,9 +8,9 @@ type Viewport interface {
 	SetSize(width, height int)
 	Size() (width, height int)
 	Offset() Position
-	SetScrollOff(lines int)
-	ScrollTo(pos Position)
-	SetCursor(pos Position)
+	ScrollOff() int
+	ScrollTo(pos Position, bufferLineCount int)
+	SetCursor(pos Position, bufferLineCount int)
 	Cursor() Position
 	ToggleCursor()
 	IsPositionVisible(pos Position) bool
@@ -22,9 +22,11 @@ type Viewport interface {
 	BufferToViewportPosition(pos Position) (x, y int)
 	ViewportToBufferPosition(x, y int) Position
 	ScrollUp(lines int)
-	ScrollDown(lines int)
+	ScrollDown(lines int, bufferLineCount int)
 	ScrollLeft(cols int)
 	ScrollRight(cols int)
 	SetHighlightManager(hm HighlightManager)
-	SyncCursors(bufferCursors []Cursor)
+	SyncCursors(bufferCursors []Cursor, bufferLineCount int)
+	ScrollHalfPageUp()
+	ScrollHalfPageDown(bufferLineCount int)
 }
