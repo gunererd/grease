@@ -3,67 +3,28 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/editor"
-	"github.com/gunererd/grease/internal/editor/buffer"
-	"github.com/gunererd/grease/internal/editor/highlight"
-	"github.com/gunererd/grease/internal/editor/history"
-	ioManager "github.com/gunererd/grease/internal/editor/io"
-	"github.com/gunererd/grease/internal/editor/keytree"
-	"github.com/gunererd/grease/internal/editor/register"
-	"github.com/gunererd/grease/internal/editor/ui"
 )
 
 func main() {
 	f, err := tea.LogToFile("debug.log", "DEBUG")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "Error setting up logging: %v\n", err)
+		os.Exit(1)
 	}
 	defer f.Close()
 
-	profile := flag.Bool("profile", false, "Enable pprof profiling on :6060")
-	filename := flag.String("f", "", "Input file path")
-	flag.StringVar(filename, "file", "", "Input file path")
+	opts := editor.RegisterFlags()
 	flag.Parse()
 
-	if *profile {
-		go func() {
-			log.Println("Starting pprof server on :6060")
-			http.ListenAndServe(":6060", nil)
-		}()
-	}
-
-	kt := keytree.NewKeyTree()
-	manager := ioManager.New(ioManager.NewStdinSource(), ioManager.NewStdoutSink())
-	highlightManager := highlight.New()
-	buffer := buffer.New()
-	statusLine := ui.NewStatusLine()
-	viewport := ui.NewViewport(0, 0)
-	viewport.SetHighlightManager(highlightManager)
-	register := register.NewRegister()
-	historyManager := history.New(100)
-	m := editor.New(manager, buffer, statusLine, viewport, highlightManager, kt, historyManager, register)
-
-	// Check for file input first
-	if *filename != "" {
-		if err := m.LoadFromFile(*filename); err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
-		// Load content from stdin if it's not a terminal
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			if err := m.LoadFromStdin(); err != nil {
-				fmt.Fprintf(os.Stderr, "Error reading stdin: %v\n", err)
-				os.Exit(1)
-			}
-		}
+	m, err := editor.Initialize(*opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing editor: %v\n", err)
+		os.Exit(1)
 	}
 
 	p := tea.NewProgram(m,
@@ -71,6 +32,7 @@ func main() {
 		tea.WithMouseCellMotion(),
 		tea.WithMouseAllMotion(),
 	)
+
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running program: %v\n", err)
 		os.Exit(1)
