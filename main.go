@@ -9,14 +9,14 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gunererd/grease/internal/buffer"
 	"github.com/gunererd/grease/internal/editor"
-	"github.com/gunererd/grease/internal/highlight"
-	"github.com/gunererd/grease/internal/history"
-	ioManager "github.com/gunererd/grease/internal/io"
-	"github.com/gunererd/grease/internal/keytree"
-	"github.com/gunererd/grease/internal/register"
-	"github.com/gunererd/grease/internal/ui"
+	"github.com/gunererd/grease/internal/editor/buffer"
+	"github.com/gunererd/grease/internal/editor/highlight"
+	"github.com/gunererd/grease/internal/editor/history"
+	ioManager "github.com/gunererd/grease/internal/editor/io"
+	"github.com/gunererd/grease/internal/editor/keytree"
+	"github.com/gunererd/grease/internal/editor/register"
+	"github.com/gunererd/grease/internal/editor/ui"
 )
 
 func main() {

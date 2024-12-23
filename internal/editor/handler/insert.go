@@ -2,8 +2,8 @@ package handler
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gunererd/grease/internal/state"
-	"github.com/gunererd/grease/internal/types"
+	"github.com/gunererd/grease/internal/editor/state"
+	"github.com/gunererd/grease/internal/editor/types"
 )
 
 type InsertMode struct{}

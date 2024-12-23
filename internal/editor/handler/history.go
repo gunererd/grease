@@ -1,7 +1,7 @@
 package handler
 
 // import (
-// 	"github.com/gunererd/grease/internal/types"
+// 	"github.com/gunererd/grease/internal/editor/types"
 // )
 
 // // HistoryManager manages the undo/redo stacks

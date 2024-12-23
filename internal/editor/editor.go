@@ -8,11 +8,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/editor/handler"
-	ioManager "github.com/gunererd/grease/internal/io"
-	"github.com/gunererd/grease/internal/keytree"
-	"github.com/gunererd/grease/internal/register"
-	"github.com/gunererd/grease/internal/state"
-	"github.com/gunererd/grease/internal/types"
+	ioManager "github.com/gunererd/grease/internal/editor/io"
+	"github.com/gunererd/grease/internal/editor/keytree"
+	"github.com/gunererd/grease/internal/editor/register"
+	"github.com/gunererd/grease/internal/editor/state"
+	"github.com/gunererd/grease/internal/editor/types"
 )
 
 type Editor struct {

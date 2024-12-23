@@ -1,14 +1,14 @@
 package handler
 
 import (
-	"github.com/gunererd/grease/internal/command"
-	"github.com/gunererd/grease/internal/command/change"
-	"github.com/gunererd/grease/internal/command/clipboard"
-	"github.com/gunererd/grease/internal/command/delete"
-	"github.com/gunererd/grease/internal/command/insert"
-	"github.com/gunererd/grease/internal/command/motion"
-	"github.com/gunererd/grease/internal/register"
-	"github.com/gunererd/grease/internal/types"
+	"github.com/gunererd/grease/internal/editor/command"
+	"github.com/gunererd/grease/internal/editor/command/change"
+	"github.com/gunererd/grease/internal/editor/command/clipboard"
+	"github.com/gunererd/grease/internal/editor/command/delete"
+	"github.com/gunererd/grease/internal/editor/command/insert"
+	"github.com/gunererd/grease/internal/editor/command/motion"
+	"github.com/gunererd/grease/internal/editor/register"
+	"github.com/gunererd/grease/internal/editor/types"
 )
 
 // Command is the interface that all commands must implement

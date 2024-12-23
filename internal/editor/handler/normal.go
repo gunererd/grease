@@ -4,11 +4,11 @@ import (
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gunererd/grease/internal/command/motion"
-	"github.com/gunererd/grease/internal/keytree"
-	"github.com/gunererd/grease/internal/register"
-	"github.com/gunererd/grease/internal/state"
-	"github.com/gunererd/grease/internal/types"
+	"github.com/gunererd/grease/internal/editor/command/motion"
+	"github.com/gunererd/grease/internal/editor/keytree"
+	"github.com/gunererd/grease/internal/editor/register"
+	"github.com/gunererd/grease/internal/editor/state"
+	"github.com/gunererd/grease/internal/editor/types"
 )
 
 type NormalMode struct {
