@@ -6,29 +6,25 @@ import (
 )
 
 type DeleteLineCommand struct {
-	cursorID int
+	cursor types.Cursor
 }
 
-func NewDeleteLineCommand(cursorID int) command.Command {
+func NewDeleteLineCommand(cursor types.Cursor) command.Command {
 	return &DeleteLineCommand{
-		cursorID: cursorID,
+		cursor: cursor,
 	}
 }
 
 func (c *DeleteLineCommand) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
-	cursor, err := buf.GetCursor(c.cursorID)
-	if err != nil {
-		return e
-	}
 
-	line := cursor.GetPosition().Line()
+	line := c.cursor.GetPosition().Line()
 	buf.RemoveLine(line)
 
 	if line >= buf.LineCount() && line > 0 {
-		buf.MoveCursor(c.cursorID, line-1, 0)
+		buf.MoveCursor(c.cursor.ID(), line-1, 0)
 	} else {
-		buf.MoveCursor(c.cursorID, line, 0)
+		buf.MoveCursor(c.cursor.ID(), line, 0)
 	}
 
 	return e
@@ -39,23 +35,19 @@ func (c *DeleteLineCommand) Name() string {
 }
 
 type DeleteToEndCommandOfLine struct {
-	cursorID int
+	cursor types.Cursor
 }
 
-func NewDeleteToEndOfLineCommand(cursorID int) command.Command {
+func NewDeleteToEndOfLineCommand(cursor types.Cursor) command.Command {
 	return &DeleteToEndCommandOfLine{
-		cursorID: cursorID,
+		cursor: cursor,
 	}
 }
 
 func (c *DeleteToEndCommandOfLine) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
-	cursor, err := buf.GetCursor(c.cursorID)
-	if err != nil {
-		return e
-	}
 
-	pos := cursor.GetPosition()
+	pos := c.cursor.GetPosition()
 	line, _ := buf.GetLine(pos.Line())
 	newLine := line[:pos.Column()]
 	buf.ReplaceLine(pos.Line(), newLine)

@@ -7,24 +7,20 @@ import (
 
 type InsertCommand struct {
 	startOfLine bool
-	cursorID    int
+	cursor      types.Cursor
 }
 
-func NewInsertCommand(startOfLine bool, cursorID int) *InsertCommand {
+func NewInsertCommand(startOfLine bool, cursor types.Cursor) *InsertCommand {
 	return &InsertCommand{
 		startOfLine: startOfLine,
-		cursorID:    cursorID,
+		cursor:      cursor,
 	}
 }
 
 func (c *InsertCommand) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
-	cursor, err := buf.GetCursor(c.cursorID)
-	if err != nil {
-		return e
-	}
 
-	pos := cursor.GetPosition()
+	pos := c.cursor.GetPosition()
 	if c.startOfLine {
 		// For 'I', move to first non-whitespace character
 		line, _ := buf.GetLine(pos.Line())
@@ -35,7 +31,7 @@ func (c *InsertCommand) Execute(e types.Editor) types.Editor {
 				break
 			}
 		}
-		buf.MoveCursor(c.cursorID, pos.Line(), col)
+		buf.MoveCursor(c.cursor.ID(), pos.Line(), col)
 	}
 
 	e.SetMode(state.InsertMode)

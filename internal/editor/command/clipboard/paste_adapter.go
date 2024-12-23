@@ -10,21 +10,20 @@ import (
 type PasteCommandAdapter struct {
 	cmd      *PasteCommand
 	register *register.Register
-	cursorID int
+	cursor   types.Cursor
 }
 
-func NewPasteCommandAdapter(cursorID int, register *register.Register, before bool) command.Command {
+func NewPasteCommandAdapter(cursor types.Cursor, register *register.Register, before bool) command.Command {
 	return &PasteCommandAdapter{
 		cmd:      NewPasteCommand(before),
 		register: register,
-		cursorID: cursorID,
+		cursor:   cursor,
 	}
 }
 
 func (a *PasteCommandAdapter) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
-	cursor, _ := buf.GetCursor(a.cursorID)
-	curPos := cursor.GetPosition()
+	curPos := a.cursor.GetPosition()
 
 	lines := bufferToLines(buf)
 	newLines, newPos := a.cmd.Execute(lines, curPos, a.register)
@@ -43,7 +42,7 @@ func (a *PasteCommandAdapter) Execute(e types.Editor) types.Editor {
 		}
 	}
 
-	cursor.SetPosition(newPos)
+	a.cursor.SetPosition(newPos)
 	return e
 }
 

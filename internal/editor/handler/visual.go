@@ -22,12 +22,19 @@ type VisualMode struct {
 
 func NewVisualMode(kt *keytree.KeyTree, register *register.Register, hlm types.HighlightManager) *VisualMode {
 
-	kt.Add(state.VisualMode, []string{"g", "g"}, keytree.KeyAction{
+	kt.Add(state.NormalMode, []string{"g", "g"}, keytree.KeyAction{
 		Before: func(e types.Editor) types.Editor {
 			e.Buffer().ClearCursors()
 			return e
 		},
-		Execute: motion.CreateMotionCommand(motion.NewStartOfBufferMotion(), -1),
+		Execute: func(e types.Editor) types.Editor {
+			cursor, err := e.Buffer().GetPrimaryCursor()
+			if err != nil {
+				log.Println("Failed to get primary cursor:", err)
+				return e
+			}
+			return CreateGoToStartOfBufferCommand(cursor).Execute(e)
+		},
 	})
 
 	return &VisualMode{
@@ -39,6 +46,7 @@ func NewVisualMode(kt *keytree.KeyTree, register *register.Register, hlm types.H
 
 func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
 
+	e.Buffer().ClearCursors()
 	cursor, err := e.Buffer().GetPrimaryCursor()
 	if err != nil {
 		return e, nil
@@ -56,68 +64,68 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 	}
 
 	// Handle key sequences
-	if handled, model := vm.keytree.Handle(msg.String(), e); handled {
+	if handled, e := vm.keytree.Handle(msg.String(), e); handled {
 		vm.updateHighlight(cursor, e.HighlightManager())
 		e.HandleCursorMovement()
-		return model, nil
+		return e, nil
 	}
 
-	var model types.Editor = e
 	var cmd tea.Cmd
 	switch msg.String() {
 	case "esc":
 		vm.cleanup(e)
 		e.SetMode(state.NormalMode)
 	case "h":
-		model = motion.CreateMotionCommand(motion.NewLeftMotion(), cursor.ID())(e)
+		e = CreateMotionCommand(motion.NewLeftMotion(), cursor).Execute(e)
 	case "l":
-		model = motion.CreateMotionCommand(motion.NewRightMotion(), cursor.ID())(e)
+		e = CreateMotionCommand(motion.NewRightMotion(), cursor).Execute(e)
 	case "j":
-		model = motion.CreateMotionCommand(motion.NewDownMotion(), cursor.ID())(e)
+		e = CreateMotionCommand(motion.NewDownMotion(), cursor).Execute(e)
 	case "k":
-		model = motion.CreateMotionCommand(motion.NewUpMotion(), cursor.ID())(e)
+		e = CreateMotionCommand(motion.NewUpMotion(), cursor).Execute(e)
 	case "G":
-		model = motion.CreateMotionCommand(motion.NewEndOfBufferMotion(), cursor.ID())(e)
+		e = CreateMotionCommand(motion.NewEndOfBufferMotion(), cursor).Execute(e)
 	case "i":
 		vm.cleanup(e)
 		e.SetMode(state.InsertMode)
 	case "q":
 		return e, tea.Quit
 	case "$":
-		motion.CreateMotionCommand(motion.NewEndOfLineMotion(), cursor.ID())
+		e = CreateMotionCommand(motion.NewEndOfLineMotion(), cursor).Execute(e)
 	case "^", "0":
-		motion.CreateMotionCommand(motion.NewStartOfLineMotion(), cursor.ID())
+		e = CreateMotionCommand(motion.NewStartOfLineMotion(), cursor).Execute(e)
 	case "w":
 
-		CreateWordMotionCommand(false, cursor.ID()).Execute(e)
+		CreateWordMotionCommand(false, cursor).Execute(e)
 	case "W":
-		CreateWordMotionCommand(true, cursor.ID()).Execute(e)
+		CreateWordMotionCommand(true, cursor).Execute(e)
 	case "e":
-		CreateWordEndMotionCommand(false, cursor.ID()).Execute(e)
+		CreateWordEndMotionCommand(false, cursor).Execute(e)
 	case "E":
-		CreateWordEndMotionCommand(true, cursor.ID()).Execute(e)
+		CreateWordEndMotionCommand(true, cursor).Execute(e)
 	case "b":
-		CreateWordBackMotionCommand(false, cursor.ID()).Execute(e)
+		CreateWordBackMotionCommand(false, cursor).Execute(e)
 	case "B":
-		CreateWordBackMotionCommand(true, cursor.ID()).Execute(e)
+		CreateWordBackMotionCommand(true, cursor).Execute(e)
 	case "y":
-		model = vm.operationManager.Execute(types.OpYank, e, vm.selectionStart, cursor.GetPosition())
-		vm.cleanup(model)
+		e = vm.operationManager.Execute(types.OpYank, e, vm.selectionStart, cursor.GetPosition())
+		vm.cleanup(e)
 	case "d":
-		model = vm.operationManager.Execute(types.OpDelete, e, vm.selectionStart, cursor.GetPosition())
-		vm.cleanup(model)
-		model.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
-		model.HandleCursorMovement()
+		e = vm.operationManager.Execute(types.OpDelete, e, vm.selectionStart, cursor.GetPosition())
+		vm.cleanup(e)
+		e.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
+		e.HandleCursorMovement()
 	case "c":
-		model = vm.operationManager.Execute(types.OpChange, e, vm.selectionStart, cursor.GetPosition())
-		vm.cleanup(model)
-		model.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
-		model.HandleCursorMovement()
+		e = vm.operationManager.Execute(types.OpChange, e, vm.selectionStart, cursor.GetPosition())
+		vm.cleanup(e)
+		e.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
+		e.HandleCursorMovement()
 	}
 
+	e.HandleCursorMovement()
 	vm.updateHighlight(cursor, e.HighlightManager())
 
-	return model, cmd
+	return e, cmd
 }
 
 func (vm *VisualMode) updateHighlight(cursor types.Cursor, hm types.HighlightManager) {
@@ -135,10 +143,10 @@ func (vm *VisualMode) updateHighlight(cursor types.Cursor, hm types.HighlightMan
 	}
 }
 
-func (vm *VisualMode) cleanup(model types.Editor) {
+func (vm *VisualMode) cleanup(e types.Editor) {
 	if vm.highlightID != -1 {
-		model.HighlightManager().Remove(vm.highlightID)
+		e.HighlightManager().Remove(vm.highlightID)
 		vm.highlightID = -1
 	}
-	model.SetMode(state.NormalMode)
+	e.SetMode(state.NormalMode)
 }

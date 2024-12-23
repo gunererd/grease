@@ -7,30 +7,26 @@ import (
 )
 
 type ChangeLineCommand struct {
-	cursorID int
+	cursor types.Cursor
 }
 
-func NewChangeLineCommand(cursorID int) command.Command {
+func NewChangeLineCommand(cursor types.Cursor) command.Command {
 	return &ChangeLineCommand{
-		cursorID: cursorID,
+		cursor: cursor,
 	}
 }
 
 func (c *ChangeLineCommand) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
-	cursor, err := buf.GetCursor(c.cursorID)
-	if err != nil {
-		return e
-	}
 
-	line := cursor.GetPosition().Line()
+	line := c.cursor.GetPosition().Line()
 	buf.RemoveLine(line)
 
 	if line >= buf.LineCount() && line > 0 {
-		buf.MoveCursor(c.cursorID, line-1, 0)
+		buf.MoveCursor(c.cursor.ID(), line-1, 0)
 	} else {
 		buf.InsertLine(line, "")
-		buf.MoveCursor(c.cursorID, line, 0)
+		buf.MoveCursor(c.cursor.ID(), line, 0)
 	}
 
 	e.SetMode(state.InsertMode)
@@ -42,23 +38,19 @@ func (c *ChangeLineCommand) Name() string {
 }
 
 type ChangeToEndOfLineCommand struct {
-	cursorID int
+	cursor types.Cursor
 }
 
-func NewChangeToEndOfLineCommand(cursorID int) command.Command {
+func NewChangeToEndOfLineCommand(cursor types.Cursor) command.Command {
 	return &ChangeToEndOfLineCommand{
-		cursorID: cursorID,
+		cursor: cursor,
 	}
 }
 
 func (c *ChangeToEndOfLineCommand) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
-	cursor, err := buf.GetCursor(c.cursorID)
-	if err != nil {
-		return e
-	}
 
-	pos := cursor.GetPosition()
+	pos := c.cursor.GetPosition()
 	line, _ := buf.GetLine(pos.Line())
 	newLine := line[:pos.Column()]
 	buf.ReplaceLine(pos.Line(), newLine)

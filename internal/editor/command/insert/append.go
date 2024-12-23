@@ -7,31 +7,27 @@ import (
 
 type AppendCommand struct {
 	endOfLine bool
-	cursorID  int
+	cursor    types.Cursor
 }
 
-func NewAppendCommand(endOfLine bool, cursorID int) *AppendCommand {
+func NewAppendCommand(endOfLine bool, cursor types.Cursor) *AppendCommand {
 	return &AppendCommand{
 		endOfLine: endOfLine,
-		cursorID:  cursorID,
+		cursor:    cursor,
 	}
 }
 
 func (c *AppendCommand) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
-	cursor, err := buf.GetCursor(c.cursorID)
-	if err != nil {
-		return e
-	}
 
-	pos := cursor.GetPosition()
+	pos := c.cursor.GetPosition()
 	line, _ := buf.GetLine(pos.Line())
 
 	if c.endOfLine {
-		buf.MoveCursor(c.cursorID, pos.Line(), len(line))
+		buf.MoveCursor(c.cursor.ID(), pos.Line(), len(line))
 	} else {
 		if pos.Column() < len(line) {
-			buf.MoveCursor(c.cursorID, pos.Line(), pos.Column()+1)
+			buf.MoveCursor(c.cursor.ID(), pos.Line(), pos.Column()+1)
 		}
 	}
 

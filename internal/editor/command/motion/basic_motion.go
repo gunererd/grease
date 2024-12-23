@@ -1,8 +1,6 @@
 package motion
 
 import (
-	"log"
-
 	"github.com/gunererd/grease/internal/editor/buffer"
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -103,16 +101,16 @@ func (m *DownMotion) Name() string {
 	return "move_line_down"
 }
 
-func CreateMotionCommand(motion Motion, cursorID int) func(types.Editor) types.Editor {
-	return func(e types.Editor) types.Editor {
-		buf := e.Buffer()
-		cursor, err := buf.GetCursor(cursorID)
-		if err != nil {
-			return e
-		}
-		pos := cursor.GetPosition()
-		log.Printf("type:<CreateMotionCommand>, name:<%s>, cursorID:<%d>, pos:<%v>\n", motion.Name(), cursorID, pos)
-		cmd := NewMotionCommand(motion, cursorID)
-		return cmd.Execute(e)
-	}
-}
+// func CreateMotionCommand(motion Motion, cursorID int) func(types.Editor) types.Editor {
+// 	return func(e types.Editor) types.Editor {
+// 		buf := e.Buffer()
+// 		cursor, err := buf.GetCursor(cursorID)
+// 		if err != nil {
+// 			return e
+// 		}
+// 		pos := cursor.GetPosition()
+// 		log.Printf("type:<CreateMotionCommand>, name:<%s>, cursorID:<%d>, pos:<%v>\n", motion.Name(), cursorID, pos)
+// 		cmd := NewMotionCommand(motion, cursorID)
+// 		return cmd.Execute(e)
+// 	}
+// }

@@ -1,6 +1,10 @@
 package motion
 
-import "github.com/gunererd/grease/internal/editor/types"
+import (
+	"log"
+
+	"github.com/gunererd/grease/internal/editor/types"
+)
 
 // Motion calculates a new position based on current position and buffer content
 type Motion interface {
@@ -12,30 +16,24 @@ type Motion interface {
 
 // MotionCommand wraps a motion and handles the actual cursor movement
 type MotionCommand struct {
-	motion   Motion
-	cursorID int
+	motion Motion
+	cursor types.Cursor
 }
 
-func NewMotionCommand(motion Motion, cursorID int) *MotionCommand {
-	return &MotionCommand{motion: motion, cursorID: cursorID}
+func NewMotionCommand(motion Motion, cursor types.Cursor) *MotionCommand {
+	log.Printf("type:<NewMotionCommand>, name:<%s>, cursor:<%d>, pos:<%v>\n", motion.Name(), cursor.ID(), cursor.GetPosition())
+	return &MotionCommand{motion: motion, cursor: cursor}
 }
 
 func (c *MotionCommand) Execute(e types.Editor) types.Editor {
-	cursor, err := e.Buffer().GetCursor(c.cursorID)
-	if err != nil {
-		return e
-	}
 
 	// Calculate new position using the motion
 	newPos := c.motion.Calculate(
 		bufferToLines(e.Buffer()),
-		cursor.GetPosition(),
+		c.cursor.GetPosition(),
 	)
 
-	// Move cursor to new position
-	e.Buffer().MoveCursor(c.cursorID, newPos.Line(), newPos.Column())
-	e.HandleCursorMovement()
-
+	c.cursor.SetPosition(newPos)
 	return e
 }
 
