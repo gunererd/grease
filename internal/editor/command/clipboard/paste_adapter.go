@@ -1,7 +1,8 @@
 package clipboard
 
 import (
-	"github.com/gunererd/grease/internal/editor/command"
+	"log"
+
 	"github.com/gunererd/grease/internal/editor/register"
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -11,14 +12,19 @@ type PasteCommandAdapter struct {
 	cmd      *PasteCommand
 	register *register.Register
 	cursor   types.Cursor
+	pasted   string
 }
 
-func NewPasteCommandAdapter(cursor types.Cursor, register *register.Register, before bool) command.Command {
+func NewPasteCommandAdapter(cursor types.Cursor, register *register.Register, before bool) types.Command {
 	return &PasteCommandAdapter{
 		cmd:      NewPasteCommand(before),
 		register: register,
 		cursor:   cursor,
 	}
+}
+
+func (a *PasteCommandAdapter) Explain() {
+	log.Printf("type:<PasteCommandAdapter>, cmd:<%s>, pasted:<%q>\n", a.Name(), a.pasted)
 }
 
 func (a *PasteCommandAdapter) Execute(e types.Editor) types.Editor {
@@ -43,6 +49,7 @@ func (a *PasteCommandAdapter) Execute(e types.Editor) types.Editor {
 	}
 
 	a.cursor.SetPosition(newPos)
+	a.pasted = a.register.Get()
 	return e
 }
 

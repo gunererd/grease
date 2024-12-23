@@ -1,7 +1,8 @@
 package delete
 
 import (
-	"github.com/gunererd/grease/internal/editor/command"
+	"log"
+
 	"github.com/gunererd/grease/internal/editor/types"
 )
 
@@ -9,10 +10,14 @@ type DeleteLineCommand struct {
 	cursor types.Cursor
 }
 
-func NewDeleteLineCommand(cursor types.Cursor) command.Command {
+func NewDeleteLineCommand(cursor types.Cursor) types.Command {
 	return &DeleteLineCommand{
 		cursor: cursor,
 	}
+}
+
+func (c *DeleteLineCommand) Explain() {
+	log.Printf("type:<DeleteLineCommand>, cursor:<%d>, pos:<%v>\n", c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *DeleteLineCommand) Execute(e types.Editor) types.Editor {
@@ -38,10 +43,14 @@ type DeleteToEndCommandOfLine struct {
 	cursor types.Cursor
 }
 
-func NewDeleteToEndOfLineCommand(cursor types.Cursor) command.Command {
+func NewDeleteToEndOfLineCommand(cursor types.Cursor) types.Command {
 	return &DeleteToEndCommandOfLine{
 		cursor: cursor,
 	}
+}
+
+func (c *DeleteToEndCommandOfLine) Explain() {
+	log.Printf("type:<DeleteToEndCommandOfLine>, cursor:<%d>, pos:<%v>\n", c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *DeleteToEndCommandOfLine) Execute(e types.Editor) types.Editor {

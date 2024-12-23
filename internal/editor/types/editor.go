@@ -20,4 +20,7 @@ type Editor interface {
 	Init() tea.Cmd
 	View() string
 	IO() IOManager
+	AddHook(h Hook)
+	RemoveHook(h Hook)
+	GetHooks() []Hook
 }

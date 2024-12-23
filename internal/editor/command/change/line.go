@@ -1,7 +1,8 @@
 package change
 
 import (
-	"github.com/gunererd/grease/internal/editor/command"
+	"log"
+
 	"github.com/gunererd/grease/internal/editor/state"
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -10,10 +11,14 @@ type ChangeLineCommand struct {
 	cursor types.Cursor
 }
 
-func NewChangeLineCommand(cursor types.Cursor) command.Command {
+func NewChangeLineCommand(cursor types.Cursor) types.Command {
 	return &ChangeLineCommand{
 		cursor: cursor,
 	}
+}
+
+func (c *ChangeLineCommand) Explain() {
+	log.Printf("type:<ChangeLineCommand>, cursor:<%d>, pos:<%v>\n", c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *ChangeLineCommand) Execute(e types.Editor) types.Editor {
@@ -41,10 +46,14 @@ type ChangeToEndOfLineCommand struct {
 	cursor types.Cursor
 }
 
-func NewChangeToEndOfLineCommand(cursor types.Cursor) command.Command {
+func NewChangeToEndOfLineCommand(cursor types.Cursor) types.Command {
 	return &ChangeToEndOfLineCommand{
 		cursor: cursor,
 	}
+}
+
+func (c *ChangeToEndOfLineCommand) Explain() {
+	log.Printf("type:<ChangeToEndOfLineCommand>, cursor:<%d>, pos:<%v>\n", c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *ChangeToEndOfLineCommand) Execute(e types.Editor) types.Editor {

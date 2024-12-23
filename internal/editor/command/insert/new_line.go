@@ -1,6 +1,8 @@
 package insert
 
 import (
+	"log"
+
 	"github.com/gunererd/grease/internal/editor/state"
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -13,6 +15,10 @@ func NewNewLineCommand(before bool) *NewLineCommand {
 	return &NewLineCommand{
 		before: before,
 	}
+}
+
+func (c *NewLineCommand) Explain() {
+	log.Printf("type:<NewLineCommand>, before:<%t>\n", c.before)
 }
 
 func (c *NewLineCommand) Execute(e types.Editor) types.Editor {

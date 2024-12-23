@@ -1,6 +1,8 @@
 package insert
 
 import (
+	"log"
+
 	"github.com/gunererd/grease/internal/editor/state"
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -15,6 +17,10 @@ func NewInsertCommand(startOfLine bool, cursor types.Cursor) *InsertCommand {
 		startOfLine: startOfLine,
 		cursor:      cursor,
 	}
+}
+
+func (c *InsertCommand) Explain() {
+	log.Printf("type:<InsertCommand>, startOfLine:<%t>, cursor:<%d>, pos:<%v>\n", c.startOfLine, c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *InsertCommand) Execute(e types.Editor) types.Editor {

@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/editor/handler"
+	"github.com/gunererd/grease/internal/editor/hook"
 	ioManager "github.com/gunererd/grease/internal/editor/io"
 	"github.com/gunererd/grease/internal/editor/keytree"
 	"github.com/gunererd/grease/internal/editor/register"
@@ -27,6 +28,8 @@ type Editor struct {
 	handlers         map[state.Mode]types.ModeHandler
 	highlightManager types.HighlightManager
 	historyManager   types.HistoryManager
+	executor         *handler.CommandExecutor
+	hookManager      *hook.Manager
 }
 
 func New(
@@ -39,6 +42,7 @@ func New(
 	hm types.HistoryManager,
 	// om types.OperationManager,
 	register *register.Register,
+	executor *handler.CommandExecutor,
 ) *Editor {
 	e := &Editor{
 		buffer:          b,
@@ -48,14 +52,27 @@ func New(
 		showLineNumbers: true,
 		statusLine:      sl,
 		handlers: map[state.Mode]types.ModeHandler{
-			state.NormalMode: handler.NewNormalMode(kt, register, hm),
+			state.NormalMode: handler.NewNormalMode(kt, register, hm, executor),
 			state.InsertMode: handler.NewInsertMode(),
 			state.VisualMode: handler.NewVisualMode(kt, register, hlm),
 		},
 		highlightManager: hlm,
 		historyManager:   hm,
+		executor:         executor,
 	}
 	return e
+}
+
+func (e *Editor) AddHook(h types.Hook) {
+	e.hookManager.AddHook(h)
+}
+
+func (e *Editor) RemoveHook(h types.Hook) {
+	e.hookManager.RemoveHook(h)
+}
+
+func (e *Editor) GetHooks() []types.Hook {
+	return e.hookManager.GetHooks()
 }
 
 func (e *Editor) IO() types.IOManager {

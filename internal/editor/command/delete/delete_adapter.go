@@ -1,7 +1,8 @@
 package delete
 
 import (
-	"github.com/gunererd/grease/internal/editor/command"
+	"log"
+
 	"github.com/gunererd/grease/internal/editor/command/motion"
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -10,12 +11,15 @@ type DeleteCommandAdapter struct {
 	cmd *DeleteCommand
 }
 
-func NewDeleteCommandAdapter(motion motion.Motion) command.Command {
+func NewDeleteCommandAdapter(motion motion.Motion) types.Command {
 	return &DeleteCommandAdapter{
 		cmd: NewDeleteCommand(motion),
 	}
 }
 
+func (a *DeleteCommandAdapter) Explain() {
+	log.Printf("type:<DeleteCommandAdapter>, cmd:<%s>\n", a.cmd.Name())
+}
 func (a *DeleteCommandAdapter) Execute(e types.Editor) types.Editor {
 	buf := e.Buffer()
 	cursor, _ := buf.GetPrimaryCursor()

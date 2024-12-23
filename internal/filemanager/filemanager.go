@@ -11,6 +11,7 @@ import (
 type FileManager struct {
 	currentPath string
 	editor      types.Editor
+	operations  []Operation
 }
 
 func New(initialPath string, editor types.Editor) *FileManager {

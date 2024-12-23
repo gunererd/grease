@@ -21,7 +21,6 @@ type MotionCommand struct {
 }
 
 func NewMotionCommand(motion Motion, cursor types.Cursor) *MotionCommand {
-	log.Printf("type:<NewMotionCommand>, name:<%s>, cursor:<%d>, pos:<%v>\n", motion.Name(), cursor.ID(), cursor.GetPosition())
 	return &MotionCommand{motion: motion, cursor: cursor}
 }
 
@@ -41,6 +40,9 @@ func (c *MotionCommand) Name() string {
 	return c.motion.Name()
 }
 
+func (c *MotionCommand) Explain() {
+	log.Printf("type:<MotionCommand>, cmd:<%s>, cursor:<%d>, pos:<%v>\n", c.Name(), c.cursor.ID(), c.cursor.GetPosition())
+}
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())
 	for i := 0; i < buf.LineCount(); i++ {

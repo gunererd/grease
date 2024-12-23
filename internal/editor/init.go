@@ -6,8 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gunererd/grease/internal/editor/buffer"
+	"github.com/gunererd/grease/internal/editor/handler"
 	"github.com/gunererd/grease/internal/editor/highlight"
 	"github.com/gunererd/grease/internal/editor/history"
+	"github.com/gunererd/grease/internal/editor/hook"
 	ioManager "github.com/gunererd/grease/internal/editor/io"
 	"github.com/gunererd/grease/internal/editor/keytree"
 	"github.com/gunererd/grease/internal/editor/register"
@@ -48,7 +50,8 @@ func Initialize(opts InitOptions) (*Editor, error) {
 	viewport.SetHighlightManager(highlightManager)
 	register := register.NewRegister()
 	historyManager := history.New(100)
-
+	hookManager := hook.NewManager()
+	executor := handler.NewCommandExecutor(historyManager, hookManager)
 	editor := New(
 		manager,
 		buffer,
@@ -58,6 +61,7 @@ func Initialize(opts InitOptions) (*Editor, error) {
 		kt,
 		historyManager,
 		register,
+		executor,
 	)
 
 	if opts.Filename != "" {

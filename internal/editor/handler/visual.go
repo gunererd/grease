@@ -13,16 +13,15 @@ import (
 )
 
 type VisualMode struct {
-	selectionStart   types.Position
-	highlightID      int
-	operationManager types.OperationManager
-	keytree          *keytree.KeyTree
-	hlm              types.HighlightManager
+	selectionStart types.Position
+	highlightID    int
+	keytree        *keytree.KeyTree
+	hlm            types.HighlightManager
 }
 
 func NewVisualMode(kt *keytree.KeyTree, register *register.Register, hlm types.HighlightManager) *VisualMode {
 
-	kt.Add(state.NormalMode, []string{"g", "g"}, keytree.KeyAction{
+	kt.Add(state.VisualMode, []string{"g", "g"}, keytree.KeyAction{
 		Before: func(e types.Editor) types.Editor {
 			e.Buffer().ClearCursors()
 			return e
@@ -39,8 +38,7 @@ func NewVisualMode(kt *keytree.KeyTree, register *register.Register, hlm types.H
 
 	return &VisualMode{
 		highlightID: -1, // Invalid highlight ID
-		// operationManager: om,
-		keytree: kt,
+		keytree:     kt,
 	}
 }
 
@@ -107,19 +105,19 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		CreateWordBackMotionCommand(false, cursor).Execute(e)
 	case "B":
 		CreateWordBackMotionCommand(true, cursor).Execute(e)
-	case "y":
-		e = vm.operationManager.Execute(types.OpYank, e, vm.selectionStart, cursor.GetPosition())
-		vm.cleanup(e)
-	case "d":
-		e = vm.operationManager.Execute(types.OpDelete, e, vm.selectionStart, cursor.GetPosition())
-		vm.cleanup(e)
-		e.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
-		e.HandleCursorMovement()
-	case "c":
-		e = vm.operationManager.Execute(types.OpChange, e, vm.selectionStart, cursor.GetPosition())
-		vm.cleanup(e)
-		e.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
-		e.HandleCursorMovement()
+		// case "y":
+		// 	e = vm.operationManager.Execute(types.OpYank, e, vm.selectionStart, cursor.GetPosition())
+		// 	vm.cleanup(e)
+		// case "d":
+		// 	e = vm.operationManager.Execute(types.OpDelete, e, vm.selectionStart, cursor.GetPosition())
+		// 	vm.cleanup(e)
+		// 	e.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
+		// 	e.HandleCursorMovement()
+		// case "c":
+		// 	e = vm.operationManager.Execute(types.OpChange, e, vm.selectionStart, cursor.GetPosition())
+		// 	vm.cleanup(e)
+		// 	e.Buffer().MoveCursor(cursor.ID(), vm.selectionStart.Line(), vm.selectionStart.Column())
+		// 	e.HandleCursorMovement()
 	}
 
 	e.HandleCursorMovement()

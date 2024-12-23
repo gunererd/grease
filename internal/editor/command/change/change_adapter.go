@@ -1,7 +1,8 @@
 package change
 
 import (
-	"github.com/gunererd/grease/internal/editor/command"
+	"log"
+
 	"github.com/gunererd/grease/internal/editor/command/motion"
 	"github.com/gunererd/grease/internal/editor/state"
 	"github.com/gunererd/grease/internal/editor/types"
@@ -11,10 +12,14 @@ type ChangeCommandAdapter struct {
 	cmd *ChangeCommand
 }
 
-func NewChangeCommandAdapter(motion motion.Motion) command.Command {
+func NewChangeCommandAdapter(motion motion.Motion) types.Command {
 	return &ChangeCommandAdapter{
 		cmd: NewChangeCommand(motion),
 	}
+}
+
+func (a *ChangeCommandAdapter) Explain() {
+	log.Printf("type:<ChangeCommandAdapter>, cmd:<%s>\n", a.cmd.Name())
 }
 
 func (a *ChangeCommandAdapter) Execute(e types.Editor) types.Editor {

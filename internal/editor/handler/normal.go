@@ -15,9 +15,10 @@ type NormalMode struct {
 	keytree  *keytree.KeyTree
 	register *register.Register
 	history  types.HistoryManager
+	executor *CommandExecutor
 }
 
-func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history types.HistoryManager) *NormalMode {
+func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history types.HistoryManager, executor *CommandExecutor) *NormalMode {
 
 	// Vim style Jump to beginning of buffer
 	kt.Add(state.NormalMode, []string{"g", "g"}, keytree.KeyAction{
@@ -31,7 +32,8 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history typ
 				log.Println("Failed to get primary cursor:", err)
 				return e
 			}
-			return CreateGoToStartOfBufferCommand(cursor).Execute(e)
+			cmd := CreateGoToStartOfBufferCommand(cursor)
+			return executor.Execute(cmd, e)
 		},
 	})
 
@@ -46,7 +48,8 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history typ
 				log.Println("Failed to get primary cursor:", err)
 				return e
 			}
-			return CreateDeleteLineCommand(cursor, history).Execute(e)
+			cmd := CreateDeleteLineCommand(cursor)
+			return executor.Execute(cmd, e)
 		},
 	})
 
@@ -61,84 +64,140 @@ func NewNormalMode(kt *keytree.KeyTree, register *register.Register, history typ
 				log.Println("Failed to get primary cursor:", err)
 				return e
 			}
-			return CreateChangeLineCommand(cursor, history).Execute(e)
+			cmd := CreateChangeLineCommand(cursor)
+			return executor.Execute(cmd, e)
 		},
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "w"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordMotion(false), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateDeleteCommand(motion.NewWordMotion(false))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "W"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordMotion(true), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateDeleteCommand(motion.NewWordMotion(true))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "e"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordEndMotion(false), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateDeleteCommand(motion.NewWordEndMotion(false))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "E"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordEndMotion(true), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateDeleteCommand(motion.NewWordEndMotion(true))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "b"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordBackMotion(false), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateDeleteCommand(motion.NewWordBackMotion(false))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"d", "B"}, keytree.KeyAction{
-		Execute: CreateDeleteCommand(motion.NewWordBackMotion(true), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateDeleteCommand(motion.NewWordBackMotion(true))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "w"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordMotion(false), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateChangeCommand(motion.NewWordMotion(false))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "W"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordMotion(true), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateChangeCommand(motion.NewWordMotion(true))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "e"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordEndMotion(false), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateChangeCommand(motion.NewWordEndMotion(false))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "E"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordEndMotion(true), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateChangeCommand(motion.NewWordEndMotion(true))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "b"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordBackMotion(false), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateChangeCommand(motion.NewWordBackMotion(false))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"c", "B"}, keytree.KeyAction{
-		Execute: CreateChangeCommand(motion.NewWordBackMotion(true), history).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateChangeCommand(motion.NewWordBackMotion(true))
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	// Word motion commands - yank
 	kt.Add(state.NormalMode, []string{"y", "w"}, keytree.KeyAction{
-		Execute: CreateYankCommand(motion.NewWordMotion(false), register).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateYankCommand(motion.NewWordMotion(false), register)
+			return executor.Execute(cmd, e)
+		},
 	})
 	kt.Add(state.NormalMode, []string{"y", "W"}, keytree.KeyAction{
-		Execute: CreateYankCommand(motion.NewWordMotion(true), register).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateYankCommand(motion.NewWordMotion(true), register)
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"y", "e"}, keytree.KeyAction{
-		Execute: CreateYankCommand(motion.NewWordEndMotion(false), register).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateYankCommand(motion.NewWordEndMotion(false), register)
+			return executor.Execute(cmd, e)
+		},
 	})
 	kt.Add(state.NormalMode, []string{"y", "E"}, keytree.KeyAction{
-		Execute: CreateYankCommand(motion.NewWordEndMotion(true), register).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateYankCommand(motion.NewWordEndMotion(true), register)
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	kt.Add(state.NormalMode, []string{"y", "b"}, keytree.KeyAction{
-		Execute: CreateYankCommand(motion.NewWordBackMotion(false), register).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateYankCommand(motion.NewWordBackMotion(false), register)
+			return executor.Execute(cmd, e)
+		},
 	})
 	kt.Add(state.NormalMode, []string{"y", "B"}, keytree.KeyAction{
-		Execute: CreateYankCommand(motion.NewWordBackMotion(true), register).Execute,
+		Execute: func(e types.Editor) types.Editor {
+			cmd := CreateYankCommand(motion.NewWordBackMotion(true), register)
+			return executor.Execute(cmd, e)
+		},
 	})
 
 	return &NormalMode{
 		keytree:  kt,
 		register: register,
 		history:  history,
+		executor: executor,
 	}
 }
 
@@ -152,39 +211,34 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 	switch msg.String() {
 	case "ctrl+c":
 		return e, tea.Quit
-	// case "C":
-	// 	log.Println("shift+c")
-	// 	buf := e.Buffer()
-	// 	cursor, err := buf.AddCursor()
-	// 	if err != nil {
-	// 		return e, nil
-	// 	}
-	// 	cmd := motion.CreateMotionCommand(motion.NewDownMotion(), cursor)
-	// 	cmd(e)
-	case "h":
-		cursors := e.Buffer().GetCursors()
-		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewLeftMotion(), cursor).Execute(e)
-		}
-	case "l":
-		cursors := e.Buffer().GetCursors()
-		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewRightMotion(), cursor).Execute(e)
-		}
-	case "j":
-		cursors := e.Buffer().GetCursors()
-		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewDownMotion(), cursor).Execute(e)
-		}
-	case "k":
-		cursors := e.Buffer().GetCursors()
-		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewUpMotion(), cursor).Execute(e)
-		}
 	case "v":
 		e.SetMode(state.VisualMode)
 	case "q":
 		return e, tea.Quit
+	case "h":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			cmd := CreateMotionCommand(motion.NewLeftMotion(), cursor)
+			e = nm.executor.Execute(cmd, e)
+		}
+	case "l":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			cmd := CreateMotionCommand(motion.NewRightMotion(), cursor)
+			e = nm.executor.Execute(cmd, e)
+		}
+	case "j":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			cmd := CreateMotionCommand(motion.NewDownMotion(), cursor)
+			e = nm.executor.Execute(cmd, e)
+		}
+	case "k":
+		cursors := e.Buffer().GetCursors()
+		for _, cursor := range cursors {
+			cmd := CreateMotionCommand(motion.NewUpMotion(), cursor)
+			e = nm.executor.Execute(cmd, e)
+		}
 	case "G":
 		e.Buffer().ClearCursors()
 		cursor, err := e.Buffer().GetPrimaryCursor()
@@ -192,7 +246,8 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 			log.Println("Failed to get primary cursor:", err)
 			return e, nil
 		}
-		e = CreateGoToEndOfBufferCommand(cursor).Execute(e)
+		cmd := CreateGoToEndOfBufferCommand(cursor)
+		e = nm.executor.Execute(cmd, e)
 	case "$":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
@@ -206,68 +261,82 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 	case "w":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateWordMotionCommand(false, cursor).Execute(e)
+			cmd := CreateWordMotionCommand(false, cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "W":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateWordMotionCommand(true, cursor).Execute(e)
+			cmd := CreateWordMotionCommand(true, cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "e":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateWordEndMotionCommand(false, cursor).Execute(e)
+			cmd := CreateWordEndMotionCommand(false, cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "E":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewWordEndMotion(true), cursor).Execute(e)
+			cmd := CreateMotionCommand(motion.NewWordEndMotion(true), cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "b":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewWordBackMotion(false), cursor).Execute(e)
+			cmd := CreateMotionCommand(motion.NewWordBackMotion(false), cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "B":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateMotionCommand(motion.NewWordBackMotion(true), cursor).Execute(e)
+			cmd := CreateMotionCommand(motion.NewWordBackMotion(true), cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "o":
-		e = CreateNewLineCommand(false, nm.history).Execute(e)
+		cmd := CreateNewLineCommand(false)
+		e = nm.executor.Execute(cmd, e)
 	case "O":
-		e = CreateNewLineCommand(true, nm.history).Execute(e)
+		cmd := CreateNewLineCommand(true)
+		e = nm.executor.Execute(cmd, e)
 	case "D":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateDeleteToEndOfLineCommand(cursor, nm.history).Execute(e)
+			cmd := CreateDeleteToEndOfLineCommand(cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "C":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateChangeToEndOfLineCommand(cursor, nm.history).Execute(e)
+			cmd := CreateChangeToEndOfLineCommand(cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 
 	case "a":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateAppendCommand(false, cursor, nm.history).Execute(e)
+			cmd := CreateAppendCommand(false, cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "A":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateAppendCommand(true, cursor, nm.history).Execute(e)
+			cmd := CreateAppendCommand(true, cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 
 	case "i":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateInsertCommand(false, cursor, nm.history).Execute(e)
+			cmd := CreateInsertCommand(false, cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "I":
 		cursors := e.Buffer().GetCursors()
 		for _, cursor := range cursors {
-			e = CreateInsertCommand(true, cursor, nm.history).Execute(e)
+			cmd := CreateInsertCommand(true, cursor)
+			e = nm.executor.Execute(cmd, e)
 		}
 	case "p":
 		e.Buffer().ClearCursors()
@@ -276,7 +345,8 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 			log.Println("Failed to get primary cursor:", err)
 			return e, nil
 		}
-		e = CreatePasteCommand(cursor, nm.register, false, nm.history).Execute(e)
+		cmd := CreatePasteCommand(cursor, nm.register, false)
+		e = nm.executor.Execute(cmd, e)
 	case "P":
 		e.Buffer().ClearCursors()
 		cursor, err := e.Buffer().GetPrimaryCursor()
@@ -284,7 +354,8 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 			log.Println("Failed to get primary cursor:", err)
 			return e, nil
 		}
-		e = CreatePasteCommand(cursor, nm.register, true, nm.history).Execute(e)
+		cmd := CreatePasteCommand(cursor, nm.register, true)
+		e = nm.executor.Execute(cmd, e)
 	case "u":
 		e = nm.history.Undo(e)
 	case "ctrl+r":
@@ -295,14 +366,16 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		if err != nil {
 			return e, nil
 		}
-		e = CreateHalfPageDownCommand(cursor, e.Viewport()).Execute(e)
+		cmd := CreateHalfPageDownCommand(cursor, e.Viewport())
+		e = nm.executor.Execute(cmd, e)
 	case "ctrl+u":
 		e.Buffer().ClearCursors()
 		cursor, err := e.Buffer().GetPrimaryCursor()
 		if err != nil {
 			return e, nil
 		}
-		e = CreateHalfPageUpCommand(cursor, e.Viewport()).Execute(e)
+		cmd := CreateHalfPageUpCommand(cursor, e.Viewport())
+		e = nm.executor.Execute(cmd, e)
 
 	}
 
