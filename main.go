@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	_ "net/http/pprof"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -39,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	p := tea.NewProgram(e,
+	p := tea.NewProgram(fm,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 		tea.WithMouseAllMotion(),
