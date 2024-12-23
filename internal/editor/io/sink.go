@@ -5,17 +5,6 @@ import (
 	"os"
 )
 
-// Sink represents a destination for content from the editor
-type Sink interface {
-	// Write writes the entire content to the sink
-	Write([]byte) error
-	// Flush ensures all buffered data is written
-	Flush() error
-	// Close releases any resources associated with the sink
-	Close() error
-}
-
-// StdoutSink implements Sink for standard output
 type StdoutSink struct {
 	writer io.Writer
 }

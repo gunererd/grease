@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/editor"
+	"github.com/gunererd/grease/internal/filemanager"
 )
 
 func main() {
@@ -21,13 +22,24 @@ func main() {
 	opts := editor.RegisterFlags()
 	flag.Parse()
 
-	m, err := editor.Initialize(*opts)
+	e, err := editor.Initialize(*opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing editor: %v\n", err)
 		os.Exit(1)
 	}
 
-	p := tea.NewProgram(m,
+	path := "."
+	if opts.Filename != "" {
+		path = opts.Filename
+	}
+
+	fm := filemanager.New(path, e)
+	if err := fm.LoadDirectory(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	p := tea.NewProgram(e,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 		tea.WithMouseAllMotion(),

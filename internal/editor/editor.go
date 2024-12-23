@@ -58,6 +58,10 @@ func New(
 	return e
 }
 
+func (e *Editor) IO() types.IOManager {
+	return e.io
+}
+
 func (e *Editor) Buffer() types.Buffer {
 	return e.buffer
 }

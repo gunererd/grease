@@ -19,4 +19,5 @@ type Editor interface {
 	Update(msg tea.Msg) (tea.Model, tea.Cmd)
 	Init() tea.Cmd
 	View() string
+	IO() IOManager
 }

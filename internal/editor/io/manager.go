@@ -3,17 +3,19 @@ package io
 import (
 	"fmt"
 	"sync"
+
+	"github.com/gunererd/grease/internal/editor/types"
 )
 
 // Manager handles all IO operations for the editor
 type Manager struct {
-	source Source
-	sink   Sink
+	source types.Source
+	sink   types.Sink
 	mu     sync.RWMutex
 }
 
 // New creates a new IO manager with the given source and sink
-func New(source Source, sink Sink) *Manager {
+func New(source types.Source, sink types.Sink) *Manager {
 	return &Manager{
 		source: source,
 		sink:   sink,
@@ -53,7 +55,7 @@ func (m *Manager) SaveContent(content []byte) error {
 }
 
 // SetSource changes the current source
-func (m *Manager) SetSource(source Source) error {
+func (m *Manager) SetSource(source types.Source) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -68,7 +70,7 @@ func (m *Manager) SetSource(source Source) error {
 }
 
 // SetSink changes the current sink
-func (m *Manager) SetSink(sink Sink) error {
+func (m *Manager) SetSink(sink types.Sink) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
