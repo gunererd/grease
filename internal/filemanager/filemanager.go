@@ -1,114 +1,152 @@
 package filemanager
 
 import (
-	"bytes"
+	"fmt"
 	"os"
-	"sort"
+	"path/filepath"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gunererd/grease/internal/editor/types"
+	eTypes "github.com/gunererd/grease/internal/editor/types"
+	"github.com/gunererd/grease/internal/filemanager/handler"
+	"github.com/gunererd/grease/internal/filemanager/hook"
+	"github.com/gunererd/grease/internal/filemanager/types"
 )
 
-type FileManager struct {
-	currentPath string
-	editor      types.Editor
-	operations  []Operation
-	handler     *FileManagerHandler
+type Filemanager struct {
+	dirManager types.DirectoryManager
+	opManager  types.OperationManager
+	view       types.View
+	handler    types.Handler
+	editor     eTypes.Editor
+	logger     types.Logger
 }
 
-func New(initialPath string, editor types.Editor) *FileManager {
-	fm := &FileManager{
-		currentPath: initialPath,
-		editor:      editor,
+func New(
+	dirManager types.DirectoryManager,
+	opManager types.OperationManager,
+	view types.View,
+	editor eTypes.Editor,
+	logger types.Logger,
+) types.FileManager {
+	fm := &Filemanager{
+		dirManager: dirManager,
+		opManager:  opManager,
+		view:       view,
+		editor:     editor,
+		logger:     logger,
 	}
-	fm.handler = NewFileManagerHandler(fm)
+
+	fm.handler = handler.New(dirManager, editor, fm.LoadDirectory, logger)
+	editor.AddHook(hook.NewFileOperationHook(fm, opManager))
+
 	return fm
 }
 
-func (fm *FileManager) GetHandler() types.ModeHandler {
-	return fm.handler
+func (fm *Filemanager) DirectoryManager() types.DirectoryManager {
+	return fm.dirManager
 }
 
-func (fm *FileManager) ReadDirectory() ([]Entry, error) {
-	entries, err := os.ReadDir(fm.currentPath)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]Entry, 0, len(entries))
-	for _, entry := range entries {
-		entryType := File
-		name := entry.Name()
-
-		if entry.IsDir() {
-			entryType = Directory
-			name = name + "/"
-		}
-
-		result = append(result, Entry{
-			Name: name,
-			Type: entryType,
-		})
-	}
-
-	// Sort entries: directories first, then files, both alphabetically
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].Type == result[j].Type {
-			return result[i].Name < result[j].Name
-		}
-		return result[i].Type == Directory
-	})
-
-	return result, nil
+func (fm *Filemanager) OperationManager() types.OperationManager {
+	return fm.opManager
 }
 
-func (fm *FileManager) AsSource() types.Source {
-	return NewDirectorySource(fm)
-}
-
-func (fm *FileManager) LoadDirectory() error {
-	source := fm.AsSource()
-
-	if err := fm.editor.IO().SetSource(source); err != nil {
-		return err
-	}
-
-	content, err := source.Read()
-	if err != nil {
-		return err
-	}
-
-	return fm.editor.Buffer().LoadFromReader(bytes.NewReader(content))
+func (fm *Filemanager) Editor() eTypes.Editor {
+	return fm.editor
 }
 
 // Implement tea.Model interface
-func (fm *FileManager) Init() tea.Cmd {
+func (fm *Filemanager) Init() tea.Cmd {
 	return nil
 }
 
-func (fm *FileManager) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (fm *Filemanager) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// Filemanager handles first
-		if _, cmd := fm.handler.Handle(msg, fm.editor); cmd != nil {
+		// Let handler process the input first
+		if cmd, err := fm.handler.Handle(msg); err != nil {
 			return fm, cmd
 		}
-
-		// If filemanager didn't handle it, pass to editor
+		// If handler didn't handle it, pass to editor
 		if _, cmd := fm.editor.Update(msg); cmd != nil {
 			return fm, cmd
 		}
-
-		return fm, nil
 	default:
-		// Pass other messages to editor but maintain FileManager as model
 		if _, cmd := fm.editor.Update(msg); cmd != nil {
 			return fm, cmd
 		}
-		return fm, nil
 	}
+	return fm, nil
 }
 
-func (fm *FileManager) View() string {
-	return fm.editor.View()
+func (fm *Filemanager) View() string {
+	return fm.view.Render()
+}
+
+func (fm *Filemanager) LoadDirectory(path string) error {
+	resolvedPath, err := resolvePath(path)
+	if err != nil {
+		return fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	if err := fm.dirManager.ChangeDirectory(resolvedPath); err != nil {
+		return fmt.Errorf("failed to change directory: %w", err)
+	}
+
+	entries, err := fm.dirManager.ReadDirectory()
+	if err != nil {
+		return err
+	}
+
+	var sb strings.Builder
+	for i, entry := range entries {
+		sb.WriteString(entry.Name())
+		if i < len(entries)-1 {
+			sb.WriteString("\n")
+		}
+	}
+
+	return fm.editor.Buffer().LoadFromReader(strings.NewReader(sb.String()))
+}
+
+// resolvePath sanitizes and resolves the given path
+func resolvePath(path string) (string, error) {
+	if path == "" {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("failed to get working directory: %w", err)
+		}
+		return pwd, nil
+	}
+
+	// Expand home directory if needed
+	if strings.HasPrefix(path, "~") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		path = strings.Replace(path, "~", homeDir, 1)
+	}
+
+	// Clean and make absolute
+	absPath, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve absolute path: %w", err)
+	}
+
+	// Verify directory exists and is accessible
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to access path: %w", err)
+	}
+
+	if !info.IsDir() {
+		return "", fmt.Errorf("path is not a directory: %s", absPath)
+	}
+
+	return absPath, nil
+}
+
+func (fm *Filemanager) Logger() types.Logger {
+	return fm.logger
 }

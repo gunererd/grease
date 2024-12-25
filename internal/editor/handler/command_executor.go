@@ -8,11 +8,13 @@ import (
 // CommandExecutor handles all command executions and hooks
 type CommandExecutor struct {
 	hookManager types.HookManager
+	logger      types.Logger
 }
 
-func NewCommandExecutor(history types.HistoryManager, hookManager types.HookManager) *CommandExecutor {
+func NewCommandExecutor(history types.HistoryManager, hookManager types.HookManager, logger types.Logger) *CommandExecutor {
 	ce := &CommandExecutor{
 		hookManager: hookManager,
+		logger:      logger,
 	}
 
 	historyHook := hook.NewHistoryHook(history)
@@ -29,7 +31,7 @@ func (ce *CommandExecutor) Execute(cmd types.Command, e types.Editor) types.Edit
 	ce.hookManager.ExecuteBeforeHooks(cmd, e)
 
 	e = cmd.Execute(e)
-	cmd.Explain()
+	ce.logger.Println(cmd.Explain())
 
 	ce.hookManager.ExecuteAfterHooks(cmd, e)
 

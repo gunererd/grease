@@ -1,9 +1,9 @@
 package editor
 
 import (
-	"flag"
+	"fmt"
 	"log"
-	"net/http"
+	"os"
 
 	"github.com/gunererd/grease/internal/editor/buffer"
 	"github.com/gunererd/grease/internal/editor/handler"
@@ -13,45 +13,70 @@ import (
 	ioManager "github.com/gunererd/grease/internal/editor/io"
 	"github.com/gunererd/grease/internal/editor/keytree"
 	"github.com/gunererd/grease/internal/editor/register"
+	"github.com/gunererd/grease/internal/editor/types"
 	"github.com/gunererd/grease/internal/editor/ui"
 )
 
-type InitOptions struct {
-	Filename string
-	Profile  bool
+type options struct {
+	filename string
+	profile  bool
+	logFile  string
 }
 
-func RegisterFlags() *InitOptions {
-	opts := &InitOptions{}
+type Option func(*options)
 
-	flag.BoolVar(&opts.Profile, "profile", false, "Enable pprof profiling on :6060")
-	flag.StringVar(&opts.Filename, "f", "", "Input file path")
-	flag.StringVar(&opts.Filename, "file", "", "Input file path")
-
-	return opts
+func WithFilename(filename string) Option {
+	return func(o *options) {
+		o.filename = filename
+	}
 }
 
-func Initialize(opts InitOptions) (*Editor, error) {
-	// Setup logging
+func WithProfiling(enabled bool) Option {
+	return func(o *options) {
+		o.profile = enabled
+	}
+}
 
-	if opts.Profile {
-		go func() {
-			log.Println("Starting pprof server on :6060")
-			http.ListenAndServe(":6060", nil)
-		}()
+func WithLog(logFile string) Option {
+	return func(o *options) {
+		o.logFile = logFile
+	}
+}
+
+func Initialize(opts ...Option) (*Editor, error) {
+	options := &options{
+		filename: "",
+		profile:  false,
+		logFile:  "",
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	var logger types.Logger
+	if options.logFile != "" {
+		fileLogger, err := NewFileLogger(options.logFile, "EDITOR")
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize logger: %w", err)
+		}
+		logger = fileLogger
+	} else {
+		logger = log.New(os.Stderr, "EDITOR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 	}
 
 	kt := keytree.NewKeyTree()
 	manager := ioManager.New(ioManager.NewStdinSource(), ioManager.NewStdoutSink())
 	highlightManager := highlight.New()
-	buffer := buffer.New()
+	buffer := buffer.New(logger)
 	statusLine := ui.NewStatusLine()
 	viewport := ui.NewViewport(0, 0)
 	viewport.SetHighlightManager(highlightManager)
 	register := register.NewRegister()
 	historyManager := history.New(100)
 	hookManager := hook.NewManager()
-	executor := handler.NewCommandExecutor(historyManager, hookManager)
+	executor := handler.NewCommandExecutor(historyManager, hookManager, logger)
+
 	editor := New(
 		manager,
 		buffer,
@@ -62,10 +87,12 @@ func Initialize(opts InitOptions) (*Editor, error) {
 		historyManager,
 		register,
 		executor,
+		hookManager,
+		logger,
 	)
 
-	if opts.Filename != "" {
-		if err := editor.LoadFromFile(opts.Filename); err != nil {
+	if options.filename != "" {
+		if err := editor.LoadFromFile(options.filename); err != nil {
 			return nil, err
 		}
 	}

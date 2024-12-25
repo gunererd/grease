@@ -87,3 +87,11 @@ func (h *HistoryManager) Redo(e types.Editor) types.Editor {
 
 	return e
 }
+
+func (h *HistoryManager) UndoStack() []types.HistoryEntry {
+	return h.undoStack
+}
+
+func (h *HistoryManager) RedoStack() []types.HistoryEntry {
+	return h.redoStack
+}

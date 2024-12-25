@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -11,30 +10,28 @@ import (
 )
 
 func main() {
-	f, err := tea.LogToFile("debug.log", "DEBUG")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error setting up logging: %v\n", err)
-		os.Exit(1)
-	}
-	defer f.Close()
 
-	opts := editor.RegisterFlags()
-	flag.Parse()
-
-	e, err := editor.Initialize(*opts)
+	e, err := editor.Initialize(editor.WithLog("debug.log"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing editor: %v\n", err)
 		os.Exit(1)
 	}
 
-	path := "."
-	if opts.Filename != "" {
-		path = opts.Filename
+	fm, err := filemanager.Initialize(e, filemanager.WithLog("debug.log"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing filemanager: %v\n", err)
+		os.Exit(1)
 	}
 
-	fm := filemanager.New(path, e)
-	if err := fm.LoadDirectory(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading directory: %v\n", err)
+	// Get initial path (current directory if not specified)
+	initialPath := "."
+	if len(os.Args) > 1 {
+		initialPath = os.Args[1]
+	}
+
+	// Load initial directory
+	if err := fm.LoadDirectory(initialPath); err != nil {
+		fmt.Printf("Error loading directory: %v\n", err)
 		os.Exit(1)
 	}
 

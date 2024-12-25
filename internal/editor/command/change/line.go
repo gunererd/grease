@@ -1,7 +1,7 @@
 package change
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/gunererd/grease/internal/editor/state"
 	"github.com/gunererd/grease/internal/editor/types"
@@ -17,8 +17,8 @@ func NewChangeLineCommand(cursor types.Cursor) types.Command {
 	}
 }
 
-func (c *ChangeLineCommand) Explain() {
-	log.Printf("type:<ChangeLineCommand>, cursor:<%d>, pos:<%v>\n", c.cursor.ID(), c.cursor.GetPosition())
+func (c *ChangeLineCommand) Explain() string {
+	return fmt.Sprintf("type:<ChangeLineCommand>, cursor:<%d>, pos:<%v>", c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *ChangeLineCommand) Execute(e types.Editor) types.Editor {
@@ -52,8 +52,8 @@ func NewChangeToEndOfLineCommand(cursor types.Cursor) types.Command {
 	}
 }
 
-func (c *ChangeToEndOfLineCommand) Explain() {
-	log.Printf("type:<ChangeToEndOfLineCommand>, cursor:<%d>, pos:<%v>\n", c.cursor.ID(), c.cursor.GetPosition())
+func (c *ChangeToEndOfLineCommand) Explain() string {
+	return fmt.Sprintf("type:<ChangeToEndOfLineCommand>, cursor:<%d>, pos:<%v>", c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *ChangeToEndOfLineCommand) Execute(e types.Editor) types.Editor {

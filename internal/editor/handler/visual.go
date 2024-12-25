@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"log"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gunererd/grease/internal/editor/command/motion"
 	"github.com/gunererd/grease/internal/editor/highlight"
@@ -17,9 +15,20 @@ type VisualMode struct {
 	highlightID    int
 	keytree        *keytree.KeyTree
 	hlm            types.HighlightManager
+	logger         types.Logger
 }
 
-func NewVisualMode(kt *keytree.KeyTree, register *register.Register, hlm types.HighlightManager) *VisualMode {
+func NewVisualMode(
+	kt *keytree.KeyTree,
+	register *register.Register,
+	hlm types.HighlightManager,
+	logger types.Logger,
+) *VisualMode {
+	vm := &VisualMode{
+		hlm:         hlm,
+		logger:      logger,
+		highlightID: -1,
+	}
 
 	kt.Add(state.VisualMode, []string{"g", "g"}, keytree.KeyAction{
 		Before: func(e types.Editor) types.Editor {
@@ -29,17 +38,16 @@ func NewVisualMode(kt *keytree.KeyTree, register *register.Register, hlm types.H
 		Execute: func(e types.Editor) types.Editor {
 			cursor, err := e.Buffer().GetPrimaryCursor()
 			if err != nil {
-				log.Println("Failed to get primary cursor:", err)
+				vm.logger.Println("Failed to get primary cursor:", err)
 				return e
 			}
 			return CreateGoToStartOfBufferCommand(cursor).Execute(e)
 		},
 	})
 
-	return &VisualMode{
-		highlightID: -1, // Invalid highlight ID
-		keytree:     kt,
-	}
+	vm.keytree = kt
+
+	return vm
 }
 
 func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.Cmd) {
@@ -57,7 +65,7 @@ func (vm *VisualMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 			highlight.CreateVisualHighlight(vm.selectionStart, vm.selectionStart),
 		)
 		if vm.highlightID == -1 {
-			log.Printf("Failed to create visual highlight at position %v", vm.selectionStart)
+			vm.logger.Printf("Failed to create visual highlight at position %v", vm.selectionStart)
 		}
 	}
 
@@ -134,7 +142,7 @@ func (vm *VisualMode) updateHighlight(cursor types.Cursor, hm types.HighlightMan
 			vm.highlightID,
 			highlight.CreateVisualHighlight(vm.selectionStart, iposition),
 		) {
-			log.Printf("Failed to update visual highlight %d from %v to %v",
+			vm.logger.Printf("Failed to update visual highlight %d from %v to %v",
 				vm.highlightID, vm.selectionStart, currentPos)
 			vm.highlightID = -1
 		}

@@ -6,5 +6,5 @@ type Command interface {
 
 	// Name returns the command name for command mode
 	Name() string
-	Explain()
+	Explain() string
 }

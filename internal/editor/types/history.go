@@ -9,6 +9,9 @@ type HistoryManager interface {
 	Push(entry HistoryEntry)
 	CanUndo() bool
 	CanRedo() bool
+
+	UndoStack() []HistoryEntry
+	RedoStack() []HistoryEntry
 }
 
 // HistoryEntry represents a single operation in the history

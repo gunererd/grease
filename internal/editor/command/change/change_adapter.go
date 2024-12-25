@@ -1,7 +1,7 @@
 package change
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/gunererd/grease/internal/editor/command/motion"
 	"github.com/gunererd/grease/internal/editor/state"
@@ -18,8 +18,8 @@ func NewChangeCommandAdapter(motion motion.Motion) types.Command {
 	}
 }
 
-func (a *ChangeCommandAdapter) Explain() {
-	log.Printf("type:<ChangeCommandAdapter>, cmd:<%s>\n", a.cmd.Name())
+func (a *ChangeCommandAdapter) Explain() string {
+	return fmt.Sprintf("type:<ChangeCommandAdapter>, cmd:<%s>", a.cmd.Name())
 }
 
 func (a *ChangeCommandAdapter) Execute(e types.Editor) types.Editor {

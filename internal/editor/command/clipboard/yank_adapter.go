@@ -1,7 +1,7 @@
 package clipboard
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/gunererd/grease/internal/editor/command/motion"
 	"github.com/gunererd/grease/internal/editor/register"
@@ -33,8 +33,8 @@ func (a *YankCommandAdapter) Execute(e types.Editor) types.Editor {
 	return e
 }
 
-func (a *YankCommandAdapter) Explain() {
-	log.Printf("type:<YankCommandAdapter>, cmd:<%s>, yanked:<%q>\n", a.cmd.Name(), a.yanked)
+func (a *YankCommandAdapter) Explain() string {
+	return fmt.Sprintf("type:<YankCommandAdapter>, cmd:<%s>, yanked:<%q>", a.cmd.Name(), a.yanked)
 }
 func (a *YankCommandAdapter) Name() string {
 	return a.cmd.Name()

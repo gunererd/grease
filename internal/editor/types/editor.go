@@ -23,4 +23,5 @@ type Editor interface {
 	AddHook(h Hook)
 	RemoveHook(h Hook)
 	GetHooks() []Hook
+	Logger() Logger
 }

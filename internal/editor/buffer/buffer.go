@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"io"
-	"log"
 	"regexp"
 	"sort"
 	"sync"
@@ -28,12 +27,14 @@ type Buffer struct {
 	mu      sync.RWMutex
 
 	nextCursorID int
+	logger       types.Logger
 }
 
 // New creates a new empty buffer
-func New() *Buffer {
+func New(logger types.Logger) *Buffer {
 	b := &Buffer{
-		lines: [][]rune{{}}, // start with one empty line
+		lines:  [][]rune{{}}, // start with one empty line
+		logger: logger,
 	}
 	// Create primary cursor at start of buffer
 	pos := NewPosition(0, 0)
@@ -76,7 +77,7 @@ func (b *Buffer) MoveCursorRelative(cursorID int, lineOffset, columnOffset int) 
 
 	// Validate line bounds
 	if newPos.Line() < 0 || newPos.Line() >= len(b.lines) {
-		log.Println("Invalid line:", newPos.Line())
+		b.logger.Println("Invalid line:", newPos.Line())
 		return ErrInvalidLine
 	}
 
@@ -111,7 +112,7 @@ func (b *Buffer) MoveCursor(cursorID int, lineOffset, columnOffset int) error {
 
 	// Validate line bounds
 	if newPos.Line() < 0 || newPos.Line() >= len(b.lines) {
-		log.Println("Invalid line:", newPos.Line())
+		b.logger.Println("Invalid line:", newPos.Line())
 		return ErrInvalidLine
 	}
 

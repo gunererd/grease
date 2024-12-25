@@ -1,7 +1,7 @@
 package motion
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -40,8 +40,8 @@ func (c *MotionCommand) Name() string {
 	return c.motion.Name()
 }
 
-func (c *MotionCommand) Explain() {
-	log.Printf("type:<MotionCommand>, cmd:<%s>, cursor:<%d>, pos:<%v>\n", c.Name(), c.cursor.ID(), c.cursor.GetPosition())
+func (c *MotionCommand) Explain() string {
+	return fmt.Sprintf("type:<MotionCommand>, cmd:<%s>, cursor:<%d>, pos:<%v>", c.Name(), c.cursor.ID(), c.cursor.GetPosition())
 }
 func bufferToLines(buf types.Buffer) []string {
 	lines := make([]string, buf.LineCount())

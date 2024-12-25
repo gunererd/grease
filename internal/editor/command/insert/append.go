@@ -1,7 +1,7 @@
 package insert
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/gunererd/grease/internal/editor/state"
 	"github.com/gunererd/grease/internal/editor/types"
@@ -19,8 +19,8 @@ func NewAppendCommand(endOfLine bool, cursor types.Cursor) *AppendCommand {
 	}
 }
 
-func (c *AppendCommand) Explain() {
-	log.Printf("type:<AppendCommand>, endOfLine:<%t>, cursor:<%d>, pos:<%v>\n", c.endOfLine, c.cursor.ID(), c.cursor.GetPosition())
+func (c *AppendCommand) Explain() string {
+	return fmt.Sprintf("type:<AppendCommand>, endOfLine:<%t>, cursor:<%d>, pos:<%v>", c.endOfLine, c.cursor.ID(), c.cursor.GetPosition())
 }
 
 func (c *AppendCommand) Execute(e types.Editor) types.Editor {
