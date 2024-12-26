@@ -9,16 +9,17 @@ import (
 )
 
 type FileOperationHook struct {
-	fm        types.FileManager
-	opManager types.OperationManager
-	clipboard map[string]string // stores original paths of deleted/moved files
+	dirManager types.DirectoryManager
+	opManager  types.OperationManager
+	clipboard  map[string]string // stores original paths of deleted/moved files
+	logger     types.Logger
 }
 
-func NewFileOperationHook(fm types.FileManager, opManager types.OperationManager) *FileOperationHook {
+func NewFileOperationHook(dirManager types.DirectoryManager, opManager types.OperationManager) *FileOperationHook {
 	return &FileOperationHook{
-		fm:        fm,
-		opManager: opManager,
-		clipboard: make(map[string]string),
+		dirManager: dirManager,
+		opManager:  opManager,
+		clipboard:  make(map[string]string),
 	}
 }
 
@@ -42,12 +43,12 @@ func (foh *FileOperationHook) OnAfterCommand(cmd eTypes.Command, e eTypes.Editor
 		}
 
 		// Store in clipboard for potential move operations
-		foh.clipboard[content] = filepath.Join(foh.fm.DirectoryManager().CurrentPath(), content)
+		foh.clipboard[content] = filepath.Join(foh.dirManager.CurrentPath(), content)
 
 		// Queue delete operation
 		foh.opManager.QueueOperation(operation.New(
 			types.Delete,
-			filepath.Join(foh.fm.DirectoryManager().CurrentPath(), content),
+			filepath.Join(foh.dirManager.CurrentPath(), content),
 			"",
 		))
 
@@ -73,8 +74,8 @@ func (foh *FileOperationHook) OnAfterCommand(cmd eTypes.Command, e eTypes.Editor
 			// Queue rename operation
 			foh.opManager.QueueOperation(operation.New(
 				types.Rename,
-				filepath.Join(foh.fm.DirectoryManager().CurrentPath(), oldContent),
-				filepath.Join(foh.fm.DirectoryManager().CurrentPath(), newContent),
+				filepath.Join(foh.dirManager.CurrentPath(), oldContent),
+				filepath.Join(foh.dirManager.CurrentPath(), newContent),
 			))
 		}
 
@@ -96,7 +97,7 @@ func (foh *FileOperationHook) OnAfterCommand(cmd eTypes.Command, e eTypes.Editor
 			foh.opManager.QueueOperation(operation.New(
 				types.Move,
 				originalPath,
-				foh.fm.DirectoryManager().CurrentPath(),
+				foh.dirManager.CurrentPath(),
 			))
 			delete(foh.clipboard, content)
 		}

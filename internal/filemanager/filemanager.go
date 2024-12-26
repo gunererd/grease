@@ -38,7 +38,7 @@ func New(
 	}
 
 	fm.handler = handler.New(dirManager, editor, fm.LoadDirectory, logger)
-	editor.AddHook(hook.NewFileOperationHook(fm, opManager))
+	editor.AddHook(hook.NewFileOperationHook(dirManager, opManager))
 
 	return fm
 }
