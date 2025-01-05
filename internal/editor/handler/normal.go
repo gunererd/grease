@@ -220,6 +220,8 @@ func (nm *NormalMode) Handle(msg tea.KeyMsg, e types.Editor) (types.Editor, tea.
 		return e, tea.Quit
 	case "v":
 		e.SetMode(state.VisualMode)
+	case ":":
+		e.SetMode(state.CommandMode)
 	case "q":
 		return e, tea.Quit
 	case "h":

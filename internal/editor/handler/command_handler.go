@@ -6,6 +6,7 @@ import (
 	"github.com/gunererd/grease/internal/editor/command/delete"
 	"github.com/gunererd/grease/internal/editor/command/insert"
 	"github.com/gunererd/grease/internal/editor/command/motion"
+	"github.com/gunererd/grease/internal/editor/command/write"
 	"github.com/gunererd/grease/internal/editor/register"
 	"github.com/gunererd/grease/internal/editor/types"
 )
@@ -93,4 +94,8 @@ func CreateHalfPageDownCommand(cursor types.Cursor, viewport types.Viewport) typ
 
 func CreateHalfPageUpCommand(cursor types.Cursor, viewport types.Viewport) types.Command {
 	return CreateMotionCommand(motion.NewHalfPageUpMotion(viewport), cursor)
+}
+
+func CreateWriteCommand() types.Command {
+	return write.NewWriteCommand()
 }
